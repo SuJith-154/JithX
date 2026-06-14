@@ -364,7 +364,7 @@ Keep the story around 250-300 words.
         raise HTTPException(status_code=500, detail=f"Story generation failed: {str(e)}")
 
 @app.post("/api/contact")
-async def send_contact_email(payload: ContactRequest):
+def send_contact_email(payload: ContactRequest):
     import smtplib
     from email.mime.text import MIMEText
     from email.mime.multipart import MIMEMultipart
@@ -380,9 +380,17 @@ async def send_contact_email(payload: ContactRequest):
     smtp_username = os.environ.get("SMTP_USER")
     smtp_password = os.environ.get("SMTP_PASSWORD")
 
-    # Fallback to simulation mode if credentials are not set
-    if not smtp_username or not smtp_password:
-        print(f"SMTP credentials not set. Simulated contact form submission. To: {to_email}")
+    # Fallback to simulation mode if credentials are not set or are placeholders
+    is_placeholder = (
+        not smtp_username 
+        or not smtp_password 
+        or "your_" in smtp_username 
+        or "your_" in smtp_password
+        or smtp_username.strip() == ""
+        or smtp_password.strip() == ""
+    )
+    if is_placeholder:
+        print(f"SMTP credentials not set or are placeholders. Simulated contact form submission. To: {to_email}")
         return {"status": "simulated", "message": "Email transmission simulated successfully."}
 
     try:
@@ -395,9 +403,13 @@ async def send_contact_email(payload: ContactRequest):
         body = f"New message from JithX Digital Twin Portfolio:\n\nName: {name}\nEmail: {email}\n\nMessage:\n{message}"
         msg.attach(MIMEText(body, 'plain'))
 
-        # Secure Connection & Login
-        server = smtplib.SMTP(smtp_server, smtp_port)
-        server.starttls()
+        # Secure Connection & Login (SSL or TLS support with 10s timeout)
+        if smtp_port == 465:
+            server = smtplib.SMTP_SSL(smtp_server, smtp_port, timeout=10)
+        else:
+            server = smtplib.SMTP(smtp_server, smtp_port, timeout=10)
+            server.starttls()
+            
         server.login(smtp_username, smtp_password)
         server.sendmail(smtp_username, to_email, msg.as_string())
         server.quit()

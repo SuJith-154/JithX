@@ -173,7 +173,7 @@ export default function ContactConsole({ contact }: ContactConsoleProps) {
                     </>
                   ) : (
                     <>
-                      <Send className="w-3.5 h-3.5" /> Launch Transmission
+                      <Send className="w-3.5 h-3.5" /> Send Message
                     </>
                   )}
                 </button>
