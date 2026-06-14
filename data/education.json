@@ -1,0 +1,26 @@
+[
+  {
+    "institution": "Karpagam College of Engineering (Anna University)",
+    "degree": "B.E",
+    "department": "Computer Science and Design (CSD)",
+    "startYear": "2022",
+    "endYear": "2026",
+    "score": "8.05 CGPA"
+  },
+  {
+    "institution": "KSV Matric Higher Secondary School",
+    "degree": "HSC",
+    "department": "Science (Computer Science & Mathematics)",
+    "startYear": "2020",
+    "endYear": "2022",
+    "score": "84%"
+  },
+  {
+    "institution": "Mount Giris Matric Higher Secondary School",
+    "degree": "SSLC",
+    "department": "General Schooling",
+    "startYear": "2019",
+    "endYear": "2020",
+    "score": "94%"
+  }
+]

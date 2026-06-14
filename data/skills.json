@@ -1,0 +1,48 @@
+{
+  "programmingLanguages": [
+    { "name": "Python", "level": "Intermediate", "yearsOfExperience": 1 },
+    { "name": "Java", "level": "Intermediate", "yearsOfExperience": 1 },
+    { "name": "C", "level": "Intermediate", "yearsOfExperience": 1 },
+    { "name": "JavaScript", "level": "Intermediate", "yearsOfExperience": 1 },
+    { "name": "SQL", "level": "Intermediate", "yearsOfExperience": 1 }
+  ],
+  "aiMLTechnologies": [
+    { "name": "LLMs & Prompt Engineering", "level": "Intermediate", "yearsOfExperience": 1 },
+    { "name": "RAG (Retrieval-Augmented Generation)", "level": "Intermediate", "yearsOfExperience": 1 },
+    { "name": "Multi-Agent Systems", "level": "Intermediate", "yearsOfExperience": 1 },
+    { "name": "Vector Embeddings & Semantic Search", "level": "Intermediate", "yearsOfExperience": 1 },
+    { "name": "NLP (Natural Language Processing)", "level": "Intermediate", "yearsOfExperience": 1 },
+    { "name": "Speaker Diarization", "level": "Intermediate", "yearsOfExperience": 1 }
+  ],
+  "frontendTechnologies": [
+    { "name": "React", "level": "Intermediate", "yearsOfExperience": 1 },
+    { "name": "HTML & CSS", "level": "Intermediate", "yearsOfExperience": 1 }
+  ],
+  "backendTechnologies": [
+    { "name": "FastAPI", "level": "Intermediate", "yearsOfExperience": 1 },
+    { "name": "Node.js", "level": "Intermediate", "yearsOfExperience": 1 },
+    { "name": "FastMCP", "level": "Intermediate", "yearsOfExperience": 1 },
+    { "name": "Pandas & NumPy", "level": "Intermediate", "yearsOfExperience": 1 },
+    { "name": "Redis (Task Queuing)", "level": "Intermediate", "yearsOfExperience": 1 },
+    { "name": "Async Pipelines", "level": "Intermediate", "yearsOfExperience": 1 }
+  ],
+  "databases": [
+    { "name": "MongoDB", "level": "Intermediate", "yearsOfExperience": 1 },
+    { "name": "Neo4j (Graph DB)", "level": "Intermediate", "yearsOfExperience": 1 },
+    { "name": "ChromaDB (Vector Store)", "level": "Intermediate", "yearsOfExperience": 1 }
+  ],
+  "cloudPlatforms": [
+    { "name": "AWS (AWS Transcribe, etc.)", "level": "Intermediate", "yearsOfExperience": 1 }
+  ],
+  "developerTools": [
+    { "name": "GitHub & GitLab", "level": "Intermediate", "yearsOfExperience": 1 }
+  ],
+  "designTools": [
+    { "name": "Figma", "level": "Intermediate", "yearsOfExperience": 1 }
+  ],
+  "softSkills": [
+    { "name": "Team Leadership", "level": "Intermediate", "yearsOfExperience": 1 },
+    { "name": "Problem Solving", "level": "Intermediate", "yearsOfExperience": 1 },
+    { "name": "UI/UX Design", "level": "Intermediate", "yearsOfExperience": 1 }
+  ]
+}

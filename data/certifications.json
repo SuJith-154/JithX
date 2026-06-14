@@ -1,0 +1,6 @@
+[
+  { "name": "Java (Netstack)", "issuer": "Netstack", "date": "October 2024", "credentialUrl": "" },
+  { "name": "JavaScript (IIT Bombay)", "issuer": "IIT Bombay", "date": "March 2024", "credentialUrl": "" },
+  { "name": "Python (GUVI)", "issuer": "GUVI", "date": "October 2023", "credentialUrl": "" },
+  { "name": "Introduction to AI (Novitech)", "issuer": "Novitech", "date": "July 2023", "credentialUrl": "" }
+]

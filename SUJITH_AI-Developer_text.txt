@@ -1,0 +1,63 @@
+
+--- Page 1 ---
+ 
+SUJITH S  
+AI Engineer | LLM & Agent Systems Developer 
+sujipjk03@gmail.com 
+Gender: Male 
+DOB: 03/06/2005 
++91 6369817127 
+leetcode | Github | Linkedin 
+ 
+Education University Institute Year CGPA 
+B.E CSD Anna University Karpagam College of Engineering 2026 8.05 
+HSC State Board KSV Matric Higher Secondary School 2022 8.4 
+SSLC State Board Mount Giris Matric Higher Secondary School 2020 9.4 
+ SKILLS  
+Languages : Java , C , Python , HTML ,SQL. 
+AI/ML : LLMs, Prompt Engineering, Vector Embeddings, Semantic Search, NLP, Multi-Agent Systems, RAG 
+Frameworks & Tools : FastAPI, React, Pandas, NumPy, OpenAI API, NVIDIA NIM, AgentSDK, FastMCP 
+Databases & Dev tools : MangoDB, neo4j, ChromaDB, github, gitlab 
+ EXPERIENCE  
+AI ENGINEER INTERN - Prayag.ai [Jun 2025]* 
+ Engineered AI-driven enterprise solutions leveraging LLM architectures and multi-agent systems.
+ Built and debugged planning agents using AgentSDK for NLP/LLM orchestration with structured outputs.
+ Created intelligent chatbot systems using OpenAI API (GPT-3.5, GPT-4) and multi-agent orchestration patterns.
+ Designed and deployed MCP servers in FastAPI environments to optimize contextual data management.
+ Integrated Neo4j Graph Database and background worker modules for asynchronous AI tasks.
+ Implemented OpenAI embeddings and vector storage to power advanced semantic search.
+ Explored speaker diarization pipelines using Pyannote.audio and AWS Transcribe for audio analytics.
+Technologies Used: Python, FastAPI, MongoDB, OpenAI API, AgentSDK, FastMCP, AWS Transcribe. 
+ 
+ KEY PROJECTS  
+EasyHire.ai [Apr 2025] 
+• Developed an AI-powered hiring assistant (EasyHire.ai) to automate resume screening and candidate shortlisting using semantic 
+analysis and intelligent scoring in scalable real-time production environments 
+Technologies Used: Python, FastAPI, NVIDIA NIM APIs (Embeddings & LLMs) 
+ 
+Nanban Fund [Apr 2025] 
+• Developed a secure and user-friendly chit fund management app for friend-circle , with role-based access allowing users to register 
+monthly payments via QR code and admins to monitor contributions and identify defaulters. 
+Technologies Used: Node.js, MongoDB, React, JavaScript. 
+ 
+Salary Prediction [Feb 2025] 
+ Developed a data-driven salary prediction model using Linear Regression, enabling precise salary estimations based on candidate 
+experience, test scores, and interview performance.
+Technologies Used: Python, Scikit-learn(linear Regression) , NumPy, Pandas. 
+ 
+ CERTIFICATIONS  
+ 
+ Java - Netstack - [Oct 2024] 
+ JavaScript - IIT Bombay - [Mar 2024] 
+ Python - GUVI - [Oct 2023] 
+ Introduction to AI - Novitech - [Jul 2023] 
+ 
+ ACHIEVEMENTS  
+ Second Prize in UI Design Competition [Mar ‘23]
+Earned second place in a competitive UI design challenge at Kongu Engineering College, outperforming 50 participants with creative 
+and user-centered designs. 
+ Solved 240+ problems on Leetcode , 300+ problems across platforms and earned the Pandas badge showcasing foundational 
+data analysis skills.
+ HACKATHON [Nov 2023 ]
+Led a team of 5 members to develop web-based solutions focused on environmental sustainability, using HTML, CSS, and 
+Coordinated tasks, managed project timelines, and oversaw the presentation of the final prototype to the judges. 

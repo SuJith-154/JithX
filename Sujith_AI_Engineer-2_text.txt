@@ -1,0 +1,85 @@
+
+--- Page 1 ---
+SUJITH S 
+AI Engineer  |  LLM & Multi-Agent Systems Developer 
+sujipjk03@gmail.com •  +91 6369817127  •  LinkedIn  •  GitHub  •  LeetCode 
+ 
+EDUCATION 
+ 
+B.E – CS  Karpagam College of Engineering 2026 8.05 CGPA 
+HSC  KSV Matric Higher Secondary School 2022 8.4 
+SSLC  Mount Giris Matric Higher Secondary School 2020 9.4 
+ 
+ 
+TECHNICAL SKILLS 
+ 
+AI / ML LLMs, Prompt Engineering, RAG (Retrieval-Augmented Generation), Multi-Agent 
+Systems, Vector Embeddings, Semantic Search, NLP, Speaker Diarization  
+Frameworks FastAPI, FastMCP, AgentSDK, OpenAI API (GPT-3.5 / GPT-4), NVIDIA NIM, 
+React, Pandas, NumPy 
+Databases MongoDB, Neo4j (Graph DB), ChromaDB (Vector Store), Redis 
+Cloud & DevOps AWS Transcribe, Background Workers, Async Pipelines, GitHub, GitLab 
+Languages Python, Java, C, JavaScript, HTML, SQL 
+ 
+EXPERIENCE 
+AI Engineer Intern  |  Prayag.ai May 2025 – Present 
+• Architected a FastMCP server exposing 15+ project management APIs as MCP tools, enabling an 
+OpenAI-powered agent to dynamically select and invoke endpoints based on user intent — 
+eliminating hardcoded routing logic entirely. 
+• Designed a dual-source RAG pipeline combining ChromaDB vector embeddings (for 
+documentation) and a Neo4j graph database (for codebase relationships), improving retrieval 
+accuracy over flat-embedding approaches. 
+• Built a 3-agent orchestration pipeline (intent classifier → hybrid retriever → response 
+synthesizer) to deliver grounded, context-aware answers from heterogeneous knowledge sources. 
+• Engineered an async document intelligence system using Redis-backed dual workers — one for 
+AI embedding ingestion, one for Neo4j graph construction — processing 500+ legacy property 
+documents with relationship extraction across configurable rule sets. 
+• Integrated speaker diarization pipelines using Pyannote.audio and AWS Transcribe to extract 
+per-speaker analytics from audio recordings for enterprise use cases. 
+• Implemented OpenAI embeddings and vector storage workflows to power semantic search 
+across large enterprise knowledge bases. 
+ 
+--- Page 2 ---
+KEY PROJECTS 
+PMT – MCP Conversational Agent Aug 2025 
+Stack: Python, FastAPI, FastMCP, OpenAI API (GPT-4), AgentSDK 
+• Designed and deployed a FastMCP server that exposed 15+ REST API endpoints as structured 
+MCP tools, enabling an LLM agent to dynamically resolve user intent to the correct API call without 
+hardcoded routing. 
+• Authored structured prompt schemas defining tool parameters, usage intent, and response 
+contracts — reducing agent hallucination and improving tool-selection accuracy across complex 
+multi-step workflows. 
+• Delivered a production chatbot on top of a 40–60 API project management platform, making the 
+entire application navigable through natural language. 
+Knowledge Base Chatbot Oct 2025 
+Stack: Python, OpenAI API, ChromaDB, Neo4j, FastAPI 
+• Architected a hybrid retrieval system with two distinct data backends: ChromaDB vector store for 
+unstructured documentation and Neo4j graph database for codebase — preserving structural and 
+dependency relationships that flat embeddings cannot capture. 
+• Built a 3-agent pipeline (decider → data retriever → response generator) over 2 knowledge 
+sources, enabling precise, citation-grounded answers to developer queries about internal systems. 
+• Reduced retrieval ambiguity by routing queries to the semantically appropriate source based on 
+intent classification before retrieval. 
+Property Document Analyzer Dec 2025 
+Stack: Python, FastAPI, Redis, Neo4j, OpenAI Embeddings 
+• Built an async AI pipeline processing 500+ legacy property documents using Redis-backed 
+background workers, enabling non-blocking ingestion and graph construction at scale. 
+• Separated concerns across dual workers — one for document ingestion with OpenAI 
+embeddings, one for Neo4j relationship graph construction — enabling parallel execution and faster 
+end-to-end job completion. 
+• Implemented configurable relationship-extraction rules to identify legal and ownership links 
+between documents, surfacing relationships invisible to keyword search.  
+EasyHire.ai – AI Hiring Assistant Feb 2026 
+Stack: Python, FastAPI, NVIDIA NIM APIs (Embeddings + LLMs) 
+• Automated resume screening and candidate shortlisting using semantic similarity scoring with 
+NVIDIA NIM embeddings, reducing manual review effort in high-volume hiring pipelines. 
+• Deployed on scalable real-time infrastructure via FastAPI, enabling concurrent processing of 
+multiple candidate profiles with intelligent ranking output. 
+ 
+ACHIEVEMENTS & CERTIFICATIONS 
+• LeetCode: Solved 240+ problems; earned Pandas badge; 300+ problems solved across 
+competitive platforms. 
+• UI Design Competition — 2nd Place (Kongu Engineering College, Mar 2023): Outperformed 50+ 
+participants with user-centered interface designs. 
+• Hackathon Team Lead (Nov 2023): Led a 5-member team to build a web-based environmental 
+sustainability solution; managed timelines and final presentation. 

@@ -1,0 +1,110 @@
+[
+  {
+    "projectName": "PMT – MCP Conversational Agent",
+    "category": "AI Agent Projects",
+    "problemSolved": "Project management platforms with 40-60 APIs are complex to navigate, requiring users to learn custom UIs and manually click through workflows.",
+    "features": [
+      "Exposed 15+ REST API endpoints as structured Model Context Protocol (MCP) tools.",
+      "Enabled LLM agents to dynamically resolve user intent to correct API calls.",
+      "Structured prompt schemas for tool parameters, usage intent, and response contracts."
+    ],
+    "techStack": ["Python", "FastAPI", "FastMCP", "OpenAI API (GPT-4)", "AgentSDK"],
+    "architecture": "A FastMCP server hosting project management APIs, orchestrated by an AgentSDK-based agent executing multi-step workflows.",
+    "myContribution": "Designed and deployed the FastMCP server, structured the prompt schemas, and delivered the production chatbot interface.",
+    "challenges": "Agent hallucination in mapping unstructured inputs to correct API schemas.",
+    "learnings": "Authoring rigid schema boundaries and strict context contracts is critical for stable tool-calling agents.",
+    "githubLink": "https://github.com/SuJith-154",
+    "demoLink": "",
+    "images": []
+  },
+  {
+    "projectName": "Knowledge Base Chatbot",
+    "category": "RAG Projects",
+    "problemSolved": "Flat vector embeddings lose structural and dependency relationships in complex codebases or internal documentation.",
+    "features": [
+      "Dual data backends combining vector search and knowledge graph relationships.",
+      "3-agent orchestration pipeline: Decider, Data Retriever, Response Generator.",
+      "Intent-based routing to prevent retrieval ambiguity and hallucinations."
+    ],
+    "techStack": ["Python", "OpenAI API", "ChromaDB", "Neo4j", "FastAPI"],
+    "architecture": "ChromaDB vector store handles raw textual documentation search, while Neo4j maps codebase file relationships, linked via an intent classifier routing queries appropriately.",
+    "myContribution": "Architected the hybrid retrieval system and implemented the 3-agent orchestration pipeline.",
+    "challenges": "Integrating vector search results with graph traversals cleanly to synthetically feed the generator agent.",
+    "learnings": "Graph databases capture structural context (like code imports) that flat embeddings completely miss.",
+    "githubLink": "https://github.com/SuJith-154",
+    "demoLink": "",
+    "images": []
+  },
+  {
+    "projectName": "Property Document Analyzer",
+    "category": "Generative AI Projects",
+    "problemSolved": "Analyzing hundreds of legacy property documents for legal links and ownership transfers is manually slow and error-prone.",
+    "features": [
+      "Async processing pipeline handling 500+ legacy files using Redis task workers.",
+      "Parallel dual workers: one for embedding ingestion, one for Neo4j relationship mapping.",
+      "Configurable relationship-extraction rules to identify legal and ownership associations."
+    ],
+    "techStack": ["Python", "FastAPI", "Redis", "Neo4j", "OpenAI Embeddings"],
+    "architecture": "Documents uploaded via FastAPI are queued in Redis. Dual workers pull jobs to embed text in vector stores and build a relationship graph in Neo4j in parallel.",
+    "myContribution": "Built the background Redis queue worker framework and integrated Neo4j graph construction.",
+    "challenges": "Managing parallel sync locks and database write conflicts in Neo4j during concurrent ingestions.",
+    "learnings": "Separating ingestion workers by database target prevents bottlenecks and speeds up parsing jobs by 2x.",
+    "githubLink": "https://github.com/SuJith-154",
+    "demoLink": "",
+    "images": []
+  },
+  {
+    "projectName": "EasyHire.ai – AI Hiring Assistant",
+    "category": "LLM Projects",
+    "problemSolved": "Recruiters spend hours manually scanning hundreds of resumes, leading to screening bottlenecks.",
+    "features": [
+      "Automated resume parser and candidate profile screening.",
+      "Semantic similarity scoring against Job Descriptions using NVIDIA NIM embeddings.",
+      "FastAPI backend serving concurrent ranking calculations in real-time."
+    ],
+    "techStack": ["Python", "FastAPI", "NVIDIA NIM APIs"],
+    "architecture": "FastAPI receives PDF resumes, extracts text, generates embeddings via NVIDIA NIM, and scores similarity against a job description vector.",
+    "myContribution": "Developed semantic similarity matching backend and integrated NVIDIA NIM APIs.",
+    "challenges": "Optimizing API latency for concurrent high-volume resume scans.",
+    "learnings": "Caching model outputs and batched embedding generation drastically lowers processing costs and response time.",
+    "githubLink": "https://github.com/SuJith-154",
+    "demoLink": "",
+    "images": []
+  },
+  {
+    "projectName": "Nanban Fund",
+    "category": "Full Stack Projects",
+    "problemSolved": "Tracking monthly contributions, payments, and defaulters in small friend-circle chit funds is tedious when managed via Excel/paper.",
+    "features": [
+      "Secure role-based access for admins and regular fund members.",
+      "QR code-based payment registration and verification.",
+      "Defaulter list generation and contribution tracking dashboard."
+    ],
+    "techStack": ["Node.js", "MongoDB", "React", "JavaScript"],
+    "architecture": "React frontend communicates with a Node.js/Express server connecting to MongoDB for storing transactions and user roles.",
+    "myContribution": "Developed the complete backend service, MongoDB schemas, and payment approval workflow.",
+    "challenges": "Securing admin-only routes to ensure transaction records couldn't be manipulated by regular members.",
+    "learnings": "JWT-based role authentication is lightweight and highly effective for micro-financial management.",
+    "githubLink": "https://github.com/SuJith-154",
+    "demoLink": "",
+    "images": []
+  },
+  {
+    "projectName": "Salary Prediction",
+    "category": "Machine Learning Projects",
+    "problemSolved": "Providing fair salary offers based on subjective interview scores and candidate profiles without statistical backing.",
+    "features": [
+      "Data-driven estimation model using Linear Regression.",
+      "Features analyzed: experience, test scores, and interview performance metrics.",
+      "Quick and lightweight prediction engine suitable for HR portals."
+    ],
+    "techStack": ["Python", "Scikit-learn", "NumPy", "Pandas"],
+    "architecture": "A linear regression model trained on history sheets, predicting target salaries based on experience years and score inputs.",
+    "myContribution": "Preprocessed raw dataset, trained regression models, and evaluated feature weights using Scikit-learn.",
+    "challenges": "Managing multicollinearity between interview scores and general years of experience.",
+    "learnings": "Feature scaling and checking coefficients help keep predictions grounded and explainable to HR managers.",
+    "githubLink": "https://github.com/SuJith-154",
+    "demoLink": "",
+    "images": []
+  }
+]

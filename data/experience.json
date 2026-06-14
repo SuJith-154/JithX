@@ -1,0 +1,20 @@
+[
+  {
+    "company": "Prayag.ai",
+    "role": "Junior AI Engineer (formerly AI Engineer Intern)",
+    "duration": "May 2025 – Present",
+    "responsibilities": [
+      "Architected a FastMCP server exposing 15+ project management APIs as MCP tools, enabling an OpenAI-powered agent to dynamically select and invoke endpoints based on user intent — eliminating hardcoded routing logic entirely.",
+      "Designed a dual-source RAG pipeline combining ChromaDB vector embeddings (for documentation) and a Neo4j graph database (for codebase relationships), improving retrieval accuracy over flat-embedding approaches.",
+      "Built a 3-agent orchestration pipeline (intent classifier → hybrid retriever → response synthesizer) to deliver grounded, context-aware answers from heterogeneous knowledge sources.",
+      "Engineered an async document intelligence system using Redis-backed dual workers — one for AI embedding ingestion, one for Neo4j graph construction — processing 500+ legacy property documents with relationship extraction across configurable rule sets.",
+      "Integrated speaker diarization pipelines using Pyannote.audio and AWS Transcribe to extract per-speaker analytics from audio recordings for enterprise use cases.",
+      "Implemented OpenAI embeddings and vector storage workflows to power semantic search across large enterprise knowledge bases."
+    ],
+    "technologiesUsed": ["Python", "FastAPI", "MongoDB", "OpenAI API", "AgentSDK", "FastMCP", "AWS Transcribe", "ChromaDB", "Neo4j", "Redis", "Pyannote.audio"],
+    "achievements": [
+      "Exposed 15+ project management APIs as MCP tools for natural language application control.",
+      "Processed 500+ legacy property documents asynchronously using Redis and Neo4j relationship mapping."
+    ]
+  }
+]
