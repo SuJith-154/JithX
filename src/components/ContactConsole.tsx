@@ -16,13 +16,15 @@ interface ContactConsoleProps {
 
 export default function ContactConsole({ contact }: ContactConsoleProps) {
   const [formData, setFormData] = useState({ name: "", email: "", message: "" });
-  const [status, setStatus] = useState<"idle" | "sending" | "sent">("idle");
+  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.email || !formData.message) return;
 
     setStatus("sending");
+    setErrorMessage(null);
 
     try {
       const response = await fetch("/api/contact", {
@@ -32,16 +34,24 @@ export default function ContactConsole({ contact }: ContactConsoleProps) {
       });
 
       if (!response.ok) {
-        throw new Error("SMTP server rejected handshakes");
+        let errText = "SMTP server rejected handshakes";
+        try {
+          const errData = await response.json();
+          if (errData && errData.detail) {
+            errText = errData.detail;
+          }
+        } catch (_) {}
+        throw new Error(errText);
       }
 
       await response.json();
-    } catch (err) {
+      setStatus("sent");
+      setFormData({ name: "", email: "", message: "" });
+    } catch (err: any) {
       console.error("Failed to send message via SMTP", err);
+      setStatus("error");
+      setErrorMessage(err.message || "Transmission failed. Please verify connection and try again.");
     }
-
-    setStatus("sent");
-    setFormData({ name: "", email: "", message: "" });
   };
 
   return (
@@ -161,6 +171,12 @@ export default function ContactConsole({ contact }: ContactConsoleProps) {
                     disabled={status === "sending"}
                   />
                 </div>
+
+                {status === "error" && errorMessage && (
+                  <div className="text-red-400 text-[11px] bg-red-950/30 border border-red-500/20 p-2.5 rounded-lg font-mono">
+                    <span className="font-bold">Error:</span> {errorMessage}
+                  </div>
+                )}
 
                 <button
                   type="submit"
