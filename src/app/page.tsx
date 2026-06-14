@@ -70,13 +70,20 @@ export default async function Home() {
       {/* Main Container */}
       <div className="relative max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8 space-y-8 z-10">
 
+        {/* Top App Header */}
+        <div className="border-b border-white/10 pb-4 mb-2">
+          <h1 className="text-xl md:text-2xl font-black font-mono tracking-widest text-cyan-400 uppercase text-glow-blue">
+            JithX - Meet Sujith&apos;s AI Twin
+          </h1>
+        </div>
+
         {/* Futuristic Dashboard Header */}
         <header className="glass-panel rounded-2xl p-6 border border-white/5 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shadow-[0_4px_30px_rgba(0,0,0,0.4)]">
           <div className="space-y-2.5">
             <div className="space-y-1">
-              <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white font-mono uppercase">
+              <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white font-mono uppercase">
                 {personal?.fullName || "Sujith Senthilraj"}
-              </h1>
+              </h2>
               <p className="text-xs md:text-sm text-cyan-400 font-mono tracking-wide font-medium">
                 {personal?.tagline || "AI Engineer | LLM & Agent Developer"}
               </p>
