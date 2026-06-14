@@ -208,11 +208,16 @@ export default async function Home() {
           </section>
 
           {/* FULL WIDTH: Contact Hub */}
-          <footer className="col-span-1 lg:col-span-12 space-y-2 pt-6">
-            <h2 className="text-xs font-mono uppercase tracking-widest text-purple-400 pl-1">
-              Contact Sujith
-            </h2>
-            <ContactConsole contact={contact} />
+          <footer className="col-span-1 lg:col-span-12 space-y-6 pt-6">
+            <div className="space-y-2">
+              <h2 className="text-xs font-mono uppercase tracking-widest text-purple-400 pl-1">
+                Contact Sujith
+              </h2>
+              <ContactConsole contact={contact} />
+            </div>
+            <div className="border-t border-white/5 pt-6 pb-2 text-center font-mono text-[10px] text-white/30">
+              <p>© {new Date().getFullYear()} JithX. All rights reserved. All rights belongs to JithX.</p>
+            </div>
           </footer>
 
         </main>
