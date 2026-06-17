@@ -1,6 +1,6 @@
 fastapi
 uvicorn
-chromadb
+supabase
 google-genai
 pypdf
 pydantic

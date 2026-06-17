@@ -1,0 +1,809 @@
+
+--- Page 1 ---
+ 
+Edge-AI and Multimodal Sensor Fusion–Based 
+Smart Stick for Visually Impaired Individuals with 
+Real-Time Obstacle Detection 
+ 
+      Abstract— Independent mobility for visually impaired 
+individuals is often limited by the inability of conventional 
+assistive tools to provide early and reliable awareness of 
+surrounding obstacles. While recent smart navigation aids 
+incorporate sensing and artificial intelligence, many existing 
+solutions depend on cloud computation or single -modality 
+sensing, resulting in latency, privacy concerns, and reduced 
+robustness in real -world environments. This work proposes a 
+fully on-device smart stick based on Edge Artificial Intelligence 
+and multimodal sensor fusion for real-time obstacle detection. A 
+lightweight TinyML -based convolutional neural network 
+processes visual input on a XIAO ESP32S3 microcontroller, 
+while ultrasonic and infrared sensors supply complementary 
+distance and proximity information. These modalities are 
+combined using a decision -level fusion strategy to enhance 
+detection reliability under varying environmental conditions. 
+Experimental validation conducted in indoor and semi-outdoor 
+settings demonstrates  an average detection accuracy of 0.89, 
+with precision and recall values of 0.88 and 0.86, respectively. 
+The system achieves inference latency below 125 ms and 
+operates with low power consumption suitable for prolonged 
+use. The results confirm the feasibility of deploying multimodal 
+Edge-AI perception on resource-constrained assistive devices. 
+       Keywords:    Edge Artificial Intelligence, Assistive 
+Navigation, Multimodal Sensor Fusion, TinyML, Embedded 
+Vision Systems, Real-Time Obstacle Detection 
+I. INTRODUCTION  
+ 
+Visual impairment has a significant influence on the self -
+sufficiency and self -safety, particularly in the context of a 
+new or a dynamically changing environment. According to 
+global health reports, millions of people rely on assistive 
+devices to move around in the space of daily activities, and in 
+these cases, unidentified barriers, including furniture, stairs, 
+or moving objects, may cause an accident and undermine 
+confidence. Traditional mobility aids, such as white canes, 
+provide tactile feedback over a short d istance only and in 
+doing so require physical contact with the obstructions. 
+Despite being essential tools, their sensing abilities are 
+limited, which explains why it is important to have smart 
+assistive technologies that can sense the surroundings that 
+cannot be accessed instantly and provide early warnings.   
+ 
+The last ten years have seen the emergence of tremendous 
+advancements in artificial intelligence and embedded 
+systems, which has triggered the growth of smart mobility 
+support, incorporating electronic sensors and computational 
+intelligence. The systems th at involve vision, especially, 
+would offer high contextual details in terms of identification 
+of object types and space definition in the surrounding. 
+Similarly, the distance sensors, including ultrasonic and 
+infrared sensors are commonly used due to their affordability 
+and durability. However, many of the current assistive 
+solutions are based on a single sense, making them vulnerable 
+to noise in the environment like a low -light environment, 
+reflective surfaces, or sensor noise. This means that in real 
+life conditions, obstacle detection reliability is not coherent.   
+ 
+A number of studies have explored the use of camera -based 
+obstacle detection using deep learning models and have 
+obtained promising results in controlled laboratory settings. 
+In spite of these achievements, the methods often rely on 
+cloud computing or supercomputers, therefore, adding to the 
+latency, higher energy usage, and privacy issues. Other 
+systems use ultrasonic or infrared sensors only, and they 
+provide quick responses but do not provide semantic 
+understanding of the environment. Such paradigms norm ally 
+yield binary warnings without differentiating between 
+different obstacles disparate types and contextual risks, hence 
+restricting their use in challenging maneuvering exercises. 
+Based on this, there is still a disparity between the high -
+accuracy perce ption systems and the real -life assistive 
+Dhivya P 
+Assistant Professor, 
+Department of Computer Science and 
+Design 
+Karpagam College of Engineering 
+Coimbatore, India 
+divya19.kumar@gmail.com 
+ 
+Dr. C. N. Vanitha 
+Professor, 
+Department of Information  
+Technology 
+Karpagam College of Engineering 
+Coimbatore, India 
+drcnvanitha@gmail.com 
+ 
+Suryavisanth R S 
+UG Scholar, 
+Department of Computer Science and 
+Design 
+Karpagam College of Engineering, 
+Coimbatore, India 
+suryasugi3005@gmail.com 
+ 
+Sujith S 
+UG Scholar, 
+Department of Computer Science and 
+  Design 
+Karpagam College of Engineering 
+Coimbatore, India 
+sujipjk03@gmail.com 
+ 
+Joel Seba Clitues J 
+UG Scholar, 
+Department of Computer Science and 
+  Design 
+Karpagam College of Engineering 
+Coimbatore, India 
+joelseba2604@gmail.com 
+ 
+Sureshkumar M 
+UG Scholar, 
+Department of Computer Science and 
+Design 
+Karpagam College of Engineering, 
+Coimbatore, India 
+sureshk20200@gmail.com 
+ 
+ 
+Proceedings of the 9th International Conference on Intelligent Computing and Control Systems (ICICCS-2026)
+DVD Part Number: CFP26K74-DVD; ISBN: 979-8-3315-8946-2
+979-8-3315-8947-9/26/$31.00 ©2026 IEEE 1046
+
+--- Page 2 ---
+devices that can be used in the daily life.  The other drawback 
+of existing smart stick systems is that they do not give 
+sufficient attention to embedded deployment requirements. 
+Most of the proposed designs fail to consider the issues 
+related to implement ing machine learning models on 
+microcontrollers with low power, which deter scalability and 
+sustainability. In addition, some of the studies because of lack 
+of effective sensor -fusion strategies have consequences of 
+redundant sensing or higher rates of fal se-positive. This 
+inadequacy amplifies the need to have a single system which 
+facilitates accurate perception, efficiency in computations 
+and energy consumption without sacrificing real -time 
+responsiveness.   
+Feasibility studies play a critical role in the development of 
+assistive technologies, particularly when deploying 
+intelligent perception systems on resource -constrained 
+embedded platforms. Prior feasibility -oriented research has 
+demonstrated that while advanced sensing and AI techniques 
+show promise in controlled environments, practical 
+constraints such as power consumption, latency, hardware 
+limitations, and user safety significantly influence real-world 
+deployment [6], [9], [10]. These studies emphasize the need 
+to validate not only detection accuracy but also real -time 
+performance and energy efficiency under realistic operating 
+conditions. Motivated by these findings, the present work 
+focuses on evaluating the feasibility of integrating Edge -AI 
+vision an d multimodal sensor fusion within a low -power 
+smart stick, ensuring that the proposed system can operate 
+reliably in everyday assistive navigation scenarios. 
+ 
+The system uses an ultrasonic and infrared sensing, a 
+TinyML-optimized convolutional neural network, and is run 
+on a resource -constrained XIAO ESP32S3 microcontroller. 
+Edge computing removes cloud reliance, lowers latency and 
+prevents user privacy. The sen sor-fusion strategy applied at 
+the decision level is one that involves visual confidence with 
+the distance and proximity data, which increases robustness 
+in the different environmental conditions. The results of the 
+experiments prove that the given approac h allows reaching 
+the conclusive detection of obstacles at the cost of low 
+inference latency and low energy consumption.. 
+ 
+II. LITERATURE REVIEW 
+The research [1] provides a report on the research of AI-based 
+smart cane technologies that are developed following the 
+trend of adding the concept of artificial intelligence to 
+assistive navigation technology to improve the perception of 
+obstacles and user control. Though the work does a good job 
+in classifying the sensing and intelligence methods used in 
+smart canes, it rather focuses on the conceptual trends of 
+design as opposed to practical embedded implementation. Its 
+use in low-power, on-device applications is restricted by the 
+use of high-level AI systems and the lack of discussion about 
+real-time qualifications. Likewise, the study in [2] is an 
+overview of navigation systems used by people with visual 
+impairments and categorizes solutions based on th e sense 
+modal and guidance techniques. Although the review 
+contains useful taxonomies, it focuses more on system -level 
+descriptions and does not include a critical assessment of 
+computational feasibility, especially in the context of edge -
+based implementation on microcontrollers. 
+The article in [3] discusses the assistive systems in the 
+challenge approach, and all constraints are found in the area 
+of sensor reliability, environmental variability and user 
+adaptability. Even though the authors acknowledge the nature 
+of multimodal sensing, the review fails to explore the issue of 
+sensor fusion achieved effectively within embedded 
+limitations. A more technological view is given in [4], here 
+they use emerging technologies like visible light 
+communication and AI-based perception. Although the study 
+has an innovative scope, it more or less discusses the 
+infrastructure assisted solutions as well as the advanced 
+mechanisms of communication which cannot be applied to 
+portable and standalone smart sticks that are supposed to be 
+used daily. 
+In [5], bibliometric and narrative knowledge about wearable 
+mobility aids is presented, and it can be seen that there is an 
+increased interest in the research on smart wearables and 
+obstacle detecting devices. Nevertheless, the research is 
+focused on the t rends in publications and the further 
+development of the research instead of the assessment of the 
+algorithmic effectiveness or the performance in practice. 
+Contrary, the systematic review in [6] evaluates the 
+technologies of navigation in a more methodolo gically 
+detailed manner; various sensing and feedback strategies are 
+compared. However, the majority of systems examined 
+depend on either vision intensive processing or external 
+computing capabilities thus restricting their capability to 
+operate continuously and with low power. 
+This more narrow discussion on multimodal solutions is 
+given in [7] where data fusion solutions to multi -sensor 
+architectures serving blind and visually impaired users are 
+compared in research prototypes and commercial products. 
+Even though this work vivid ly illustrates the advantages of 
+sensor combination, most of the systems that have been 
+discussed utilize advanced fusion architectures or rely on 
+high-level processing units, which makes them challenging 
+to run on resource -constrained platforms. The focus  on 
+human aspects is adopted in [8], where the author talks about 
+wearable form factors and user comfort. Although it is 
+important that the ergonomics and usability are taken into 
+account, the study does not provide much information on the 
+algorithmic desi gn or embedded intelligence which is why 
+the gap between the user -centered design and the technical 
+implementation exists. 
+Systems that detect obstacles that are built into wearables are 
+thoroughly discussed in [9], whereby several vision -based 
+and sensor-based methods are compared. The authors point 
+out that most systems have a limited range of detection or do 
+not have semantic insight. Notably, the review observes that 
+the few solutions that manage to achieve a tradeoff in 
+accuracy, responsiveness and power efficiency, are not 
+successful. This is consistent with the reason why we need to 
+adopt lightweight Edge-AI models, and they can do real-time 
+Proceedings of the 9th International Conference on Intelligent Computing and Control Systems (ICICCS-2026)
+DVD Part Number: CFP26K74-DVD; ISBN: 979-8-3315-8946-2
+979-8-3315-8947-9/26/$31.00 ©2026 IEEE 1047
+
+--- Page 3 ---
+inferences without consuming an enormous amount of 
+energy. 
+Embedded intelligence in relation to embedded intelligence, 
+the survey in [10] examines TinyML and on -device 
+inference, their applicability to low -power applications. 
+Although the paper discusses optimization strategies and 
+issues, one area that the paper fails to thoroughly dis cuss is 
+the applications of the field in specific domains like assistive 
+navigation. The practical implementation issues are also 
+addressed in [11] which gives neural network implementation 
+on embedded system frameworks. Nevertheless, the survey is 
+not app -specific and it is not used to measure multimodal 
+sensing conditions. The more general problems of Edge AI 
+can be found in [12] where latency, memory, and energy 
+efficiency are listed as the main obstacles to mainstream 
+adoption. These problems have a dir ect effect on assistive 
+devices, with real-time responsiveness and battery life being 
+important factors.The extensive survey in [13] is focused on 
+edge deep learning in computer vision, showing that the 
+deployment of vision models is possible without the u se of 
+clouds. Although the work is highly technical, it is mostly 
+aimed at medical and industrial experts, and it provides little 
+information regarding assistive mobility environments. The 
+sensor-centric views are discussed in [14], where the AI -
+driven sensing technologies are analyzed. Despite the focus 
+on the intensive perception, sensing and decision-making are 
+viewed as incremental rather than fused in the study. Lastly, 
+the approach in [15] survey focuses on multi -sensor fusion 
+but discusses the concep t of explainability in self -driving 
+cars. Although the field is different, the discussed fusion 
+strategies offer methodological inspiration, although their 
+computational complexity can be too high to be implemented 
+with wearable assistive devices. All these studies show great 
+advancement in assistive navigation, sensor technologies, 
+Edge AI, and sensor fusion. Still, they also demonstrate a 
+definite gap: not many works discuss the concept of 
+embedding a vision, a lightweight inference of AI, and multi-
+modal sensor fusion into one, resource -limited model of a 
+smart stick. Current solutions are either biased towards high-
+level intelligence and ignore practicality or using simple 
+sensing without a sense of context. Driven by these 
+constraints, the paper will pr esent an Edge -AI-based and 
+multimodal sensor fusion based smart stick, which connects 
+the gaps among accuracy, real -time performance and energy 
+efficiency, thus allowing reliable obstacle detection of 
+visually impaired people with all-on-board intelligence. 
+III. PROPOSED SYSTEM 
+ 
+The current methodology outlines an Edge AI -powered 
+smart cane which integrates multimodal sensor fusion with 
+intelligence gained through vision to provide people with 
+visual impairment with real -time obstacle detection. As 
+depicted in Figure 1, the general sy stem architecture is 
+envisioned to be a brief, multilayered pipeline that enables 
+sensing, local intelligence processing, decision making, and 
+user feedback and is capable of running with the 
+computational and energy constraints that are characteristic of 
+embedded platforms. This methodology puts a premium on 
+on-device computing to reduce latency, eliminate network 
+connectivity to achieve user privacy. 
+ 
+Figure 1. Architecture of the Proposed Edge-AI–Based 
+Smart Stick 
+Figure 1 illustrates the proposed system architecture, 
+highlighting the integration of embedded vision and 
+multimodal sensing within a compact Edge -AI framework. 
+The architecture demonstrates a clear separation between 
+sensing, on -device intelligence, deci sion-level fusion, and 
+user feedback, emphasizing the feasibility of deploying the 
+complete perception pipeline on a resource -constrained 
+microcontroller without cloud dependency. 
+Table 1: Hardware Components Used in the Proposed 
+Smart Stick 
+Component Model / 
+Type 
+Key 
+Specification
+s 
+Role in 
+System 
+Camera 
+Module 
+OV2640 
+(or 
+equivalent
+) 
+Low-
+resolution 
+RGB camera, 
+low power 
+consumption 
+Captures 
+visual 
+frames for 
+obstacle 
+recognitio
+n using 
+TinyML-
+based 
+CNN 
+Ultrasonic 
+Sensor 
+HC-SR04 Range: 2–
+400 cm, 
+time-of-flight 
+distance 
+measurement 
+Measures 
+frontal 
+obstacle 
+distance 
+for 
+reliable 
+proximity 
+sensing 
+Infrared (IR) 
+Sensor 
+IR 
+Proximity 
+Sensor 
+Short-range 
+detection, 
+fast response 
+Detects 
+near-field 
+and low-
+lying 
+obstacles 
+not easily 
+captured 
+by vision 
+Microcontroll
+er 
+XIAO 
+ESP32S3 
+Dual-core 
+MCU, AI 
+acceleration, 
+low power, 
+Executes 
+Edge-AI 
+inference, 
+sensor 
+Proceedings of the 9th International Conference on Intelligent Computing and Control Systems (ICICCS-2026)
+DVD Part Number: CFP26K74-DVD; ISBN: 979-8-3315-8946-2
+979-8-3315-8947-9/26/$31.00 ©2026 IEEE 1048
+
+--- Page 4 ---
+embedded 
+Wi-
+Fi/Bluetooth 
+fusion, 
+and 
+decision 
+logic 
+locally 
+ 
+The main smartness of the system is the Edge -AI 
+processing unit, in which a simple TinyML -based 
+convolutional neural network (CNN) does obstacle 
+recognition on the hardware. XIAO ESP32S3 can be selected 
+due to its built -in AI acceleration, low power consum ption, 
+and an adequate amount of memory to run quantized neural 
+networks. Camera captures of visual frames are reshaped and 
+normalised before being transferred to CNN . Let the input 
+image be represented as 𝐼 ∈ ℝ𝐻×𝑊×𝐶 , where 𝐻, 𝑊, and 𝐶 
+denote height, width, and color channels, respectively. The 
+convolution operation in each CNN layer can be expressed as 
+𝐹𝑘 = 𝜎(∑ 𝐼𝑖
+𝐶
+𝑖=1 ∗ 𝑊𝑘,𝑖 + 𝑏𝑘),  (1) 
+where 𝐹𝑘  is the extracted feature map, 𝑊𝑘,𝑖  denotes the 
+convolution kernel weights, 𝑏𝑘  is the bias term, and 𝜎(⋅) 
+represents a nonlinear activation function. The given 
+formulation enables an extraction of spatial features with an 
+acceptable level of computational expenses to be inferred into 
+embedded inference.   
+The CNN model is trained to run in real -time by purging the 
+weights and quantizing the weights to INT8 before 
+deployment. Quantization also lowers the accuracy of 
+weights and activations, and consequently memory 
+consumption and inference time.  The quantized inference 
+operation can be approximated as 
+𝑦𝑞 = round (
+𝑥𝑞⋅𝑤𝑞
+𝑆𝑥𝑆𝑤
+),  (2) 
+where 𝑥𝑞 and 𝑤𝑞 represent quantized inputs and weights, and 
+𝑆𝑥  and 𝑆𝑤  are their respective scaling factors. The 
+optimization facilitates the use of the model on the ESP32S3 
+without substantially affecting the detection accuracy, which 
+is necessary to use the model on the ESP32S3 in the 
+continuous assistive mode. Simultaneously with the vision 
+processing, the ult rasonic sensor provides real time distance 
+measurements based on the time -of-flight principles.  The 
+distance 𝑑 to an obstacle is computed as 
+𝑑 =
+𝑣⋅𝑡
+2 ,   (3) 
+where 𝑣 is the speed of sound in air and 𝑡 is the measured 
+echo return time. IR sensors give either a binary or analogue 
+signal of proximity, indicating the existence of proximate or 
+low-lying barriers. The use of non -visual sensors is favored 
+because they are simple to use, inexpensive and also durable 
+in the event that the use of  camera-based perception can be 
+unreliable, such as in low -light conditions or on reflective 
+surfaces. 
+The TinyML convolutional neural network and the distance 
+sensors are connected to one another in the multimodal sensor 
+fusion and decision -making step, as shown in Fig. 1. The 
+decision-level fusion strategy is also embraced in order to 
+maintain the simplic ity of computation and improve the 
+overall accuracy. Let 𝑃𝑣  denote the confidence score 
+produced by the vision model for obstacle presence, 𝑑𝑢 the 
+ultrasonic distance measurement, and 𝑝𝑖𝑟  the IR proximity 
+indicator. A composite risk score 𝑅 is computed as 
+𝑅 = 𝛼𝑃𝑣 + 𝛽 (
+1
+𝑑𝑢
+) + 𝛾𝑝𝑖𝑟,  (4) 
+where 𝛼, 𝛽, and 𝛾 are weighting coefficients that balance the 
+contribution of each modality.  
+The weighting coefficients α, β, and γ were selected 
+empirically through preliminary experiments to balance the 
+contributions of visual confidence, distance measurement, 
+and infrared proximity sensing. The coefficients were 
+normalized such that α + β + γ = 1, ensuring a consistent and 
+interpretable fusion scale. Higher weight was assigned to the 
+vision-based confidence score to preserve semantic 
+awareness, while ultrasonic and infrared measurements were 
+given complementary weights to enhance robustness unde r 
+low-light conditions and near -field obstacle scenarios. 
+Sensitivity analysis showed that small variations in these 
+coefficients did not significantly affect overall detection 
+performance, indicating stable fusion behavior. 
+ 
+The proposed formulation would make sure that those 
+challenges that are found to be highly perceived in terms of 
+visual certainty and physical proximity are assigned a high 
+risk, and those that are isolated or noisy are dampened. The 
+decision logic subdivi des the obstacles based on the 
+calculated risk score into various warning levels, that is, low, 
+medium, and high risk. The use of threshold -based 
+classification is to maintain transparency and predictability of 
+system behaviour thus earning the trust of th e users. 
+Decision-level fusion should be adopted due to the limited 
+computational capacity of the embedded platform and the 
+need to have a deterministic and real -time response which is 
+not provided by complex probabilistic fusion techniques. 
+After the decision is adjudicated, the system activates the user 
+-feedback subsystem, which consists of a vibration motor or 
+a buzzer. The strength or time dynamics of the feedback are 
+adjusted according to the risk level assessed which results in 
+non-visual communication that is easy to grasp. As an 
+example, the greater the vibration frequency, the closer or 
+more dangerous the obstacle can be, and the lesser, the 
+further. This type of feedback paradigm reduces the cognitive 
+load and allows individuals to r espond naturally in the 
+process of navigation. 
+The combination of the methodology is an edge -AI vision 
+processing, multimodal sensor fusion, and embedded 
+decision logic that is integrated into a unified assistive 
+system. With everything perceived and thought with the 
+smart stick, the system achieves lo w latency, energy 
+efficiency and operational autonomy. The architectural 
+structure shown in Fig.  1, along with the defined data flow, 
+ensure that the solution can be considered viable and 
+applicable in the real world, at the same time maintaining the 
+Proceedings of the 9th International Conference on Intelligent Computing and Control Systems (ICICCS-2026)
+DVD Part Number: CFP26K74-DVD; ISBN: 979-8-3315-8946-2
+979-8-3315-8947-9/26/$31.00 ©2026 IEEE 1049
+
+--- Page 5 ---
+necessary technical complexity to address the requirements 
+of research contributions of the level of conferences. 
+ 
+IV. IMPLEMENTATION AND RESULTS 
+ 
+The effectiveness of the suggested Edge -AI and multimodal 
+sensor fusion-based smart stick was tested in a sequence of 
+controlled experiments that were aimed to replicate the 
+setting of real Assistance navigation conditions. The test 
+work was carried out in the  form of a prototype smart stick, 
+which was applied to the XIAO ESP32S3 microcontroller, a 
+camera module, an ultrasonic sensor, and an infrared sensor. 
+The system of sensing, inference, and decision -making 
+operations were performed on the local platfor m embedded 
+in the system without reference to any connection to a cloud. 
+The offline training of the vision model was done using 
+COCO128 dataset and then quantization was used to optimize 
+the model before deployment. The testing was performed 
+both in an indoor and semi- out of doors setting with common 
+components which include walls, furniture and human 
+movement and several runs were conducted to include 
+accountability of variation in the environment and sensor 
+noise.  
+ 
+The evaluation methodology was designed to assess not only 
+detection accuracy but also the feasibility of deploying the 
+proposed system as a real-world assistive device. The system 
+was evaluated under indoor and semi -outdoor environments 
+containing static and dynamic obstacles, including walls, 
+furniture, and human movement. Multiple experimental runs 
+were conducted to account for environmental variability and 
+sensor noise, and all reported metrics represent averaged 
+values. Performance was assessed using s tandard 
+classification metrics —accuracy, precision, recall, and F1 -
+score—to evaluate detection reliability, while inference 
+latency and power consumption were measured to validate 
+real-time responsiveness and energy efficiency. This multi -
+dimensional evaluation framework ensures that the proposed 
+system is validated not only in terms of perception 
+performance but also with respect to practical deployment 
+constraints such as low latency and battery -powered 
+operation, which are critical for assistive navigation systems. 
+The performance of the proposed system was evaluated using 
+standard classification metrics, namely accuracy, precision, 
+recall, and F1-score, defined as follows: 
+𝐹1 =  2𝑇𝑃
+2𝑇𝑃 +  𝐹𝑃 +  𝐹𝑁    
+  
+where TP, TN, FP, and FN denote true positives, true 
+negatives, false positives, and false negatives, respectively. 
+All reported performance metrics, including accuracy, 
+precision, recall, and F1 -score, are averaged over multiple 
+experimental runs conducted under varying indoor and semi-
+outdoor conditions to account for environmental variability 
+and sensor noise. 
+ 
+ 
+Fig. 2. Overall obstacle detection performance of the 
+proposed Edge-AI–based smart stick in terms of 
+precision, recall, F1-score, and accuracy. 
+ 
+Figure 2 presents the overall obstacle detection performance 
+of the proposed system. The results indicate a balanced 
+detection capability, with high accuracy (0.89) and closely 
+aligned precision (0.88) and recall (0.86) values. This balance 
+suggests that t he system effectively minimizes both false 
+positives and missed detections, which is critical for safe 
+assistive navigation. 
+ 
+Fig. 3. Precision–recall curve illustrating the detection 
+trade-off behavior of the embedded TinyML model. 
+ 
+Figure 3 further highlights the trade -off behavior of the 
+embedded TinyML model through the precision–recall curve. 
+The smooth and gradual decline in precision with increasing 
+recall demonstrates stable detection behavior and controlled 
+performance degrada tion. This indicates that the proposed 
+system maintains reliable obstacle detection even under more 
+sensitive operating thresholds, supporting its suitability for 
+real-time assistive use. 
+ 
+Proceedings of the 9th International Conference on Intelligent Computing and Control Systems (ICICCS-2026)
+DVD Part Number: CFP26K74-DVD; ISBN: 979-8-3315-8946-2
+979-8-3315-8947-9/26/$31.00 ©2026 IEEE 1050
+
+--- Page 6 ---
+ 
+Fig. 4. Inference latency of the proposed Edge-AI system 
+on the XIAO ESP32S3 under varying obstacle densities. 
+ 
+Assessment of the possibility of real time operation was done 
+by testing inference latencies through a series of obstacle 
+densities as shown in Fig. 4. When there are no obstacles, the 
+system has low latency, a characteristic of efficient 
+processing of its  baseline. The latency of inference also 
+increases gradually with the number of obstacles not only 
+because of the extra computational costs associated with the 
+extraction of features and the decision logic but also because 
+of the extra number of instances.  This is because the latency 
+in even the most challenging scenario does not exceed the 
+range of latency that can be supported by the real -time 
+navigation and hence guarantee that feedback is relayed to the 
+user in time. The absence of sudden latency spikes  also 
+highlights the deterministic character of execution of the 
+embedded implementation which is vital towards ensuring 
+coherent user experience.The proposed system has a smaller 
+communication overhead and a local processing optimization 
+compared to the c loud-based or high -power embedded 
+versions. 
+ 
+Fig. 5. Power consumption analysis of the smart stick 
+across different operating modes. 
+ 
+Fig. 5 is the power consumption analysis which gives an idea 
+about the power efficiency of the proposed design. The 
+lowest power consumption is seen in the idle operating mode, 
+and a moderate increase is seen in the sensing only mode as 
+the sensor is conti nuously running. The maximum power 
+usage is found when using Edge -AI inference as anticipated 
+because of the computational requirements of real -time 
+vision processing. However, the resulting power levels are 
+acceptably high to operate with on battery power , allowing 
+long last of use without the need of re -charging. The 
+foreseeable power consumption in the various operating 
+modes allows the optimization of power -management 
+practices and supports the feasibility of the deployment of 
+Edge-AI on resource -constrained platforms to assistive 
+technologies. 
+ 
+Fig. 6. Comparative evaluation of detection accuracy 
+showing the impact of multimodal sensor fusion against 
+baseline approaches. 
+ 
+The impact of the sensor fusion between multimodal 
+detection is clearly shown in Figure 6 compares the accuracy 
+of the detecting of objects based on three different modes of 
+operation namely vision -only, distance sensor -only and 
+proposed fusion based approach. Vision-only recognition has 
+a moderate level of accuracy, having the advantage of 
+semantic understanding but is susceptible to illumination and 
+occlusion. Distance sensors do not provide the information 
+about the context but only dependable proximity 
+measurements, resulting in a loss of its accuracy in general. 
+On the other hand, the fusion method attains the high 
+accuracy of about 0.87 and at the same time attenuated 
+variability in repeated trials. Plotted confidence intervals 
+reinforce the consistenc y of the fusion methodology and 
+support the fact that the performance improvement that is 
+observed is not chance. The system has the ability to combine 
+the complementary sensing modalities thereby reducing the 
+limitations that come with the solitary vision  and distance 
+sensors.The suggested system presents unquestionable 
+benefits when compared to baseline assistive - navigation 
+paradigms. Traditional smart sticks, which are limited to 
+ultrasonic or infrared transducers, only, impose a limited 
+level of enviro nmental perception and are prone to false 
+positives. Vision only embedded solutions despite their more 
+informational payload often face difficulties in real time 
+execution and resilience in changing environmental 
+conditions. The Edge -AI and multimodal sens or-fusion 
+system seals this gap by combining semantic perception and 
+trusted distance sensing, thus achieving a reasonable balance 
+between accuracy, response latency and energy efficiency. 
+From a feasibility perspective, the proposed system aligns 
+with and extends earlier feasibility studies on embedded 
+assistive navigation devices. Previous works have 
+highlighted that achieving a balance between perception 
+accuracy, response latency, and po wer efficiency remains a 
+key challenge for wearable and portable assistive aids [9], 
+[10]. The experimental results presented in this study 
+demonstrate that such a balance is achievable using Edge -AI 
+and decision -level sensor fusion on a microcontroller -class 
+device. Unlike several prior approaches that rely on high -
+complexity processing or external computation, the proposed 
+system validates the feasibility of fully on-device intelligence 
+while maintaining practical performance constraints. These 
+findings r einforce the importance of feasibility -driven 
+evaluations when translating assistive navigation research 
+into deployable real-world solutions. 
+Proceedings of the 9th International Conference on Intelligent Computing and Control Systems (ICICCS-2026)
+DVD Part Number: CFP26K74-DVD; ISBN: 979-8-3315-8946-2
+979-8-3315-8947-9/26/$31.00 ©2026 IEEE 1051
+
+--- Page 7 ---
+ 
+The obtained results are consistent with and extend prior 
+research on assistive navigation systems for visually impaired 
+users. Previous studies have shown that vision -based 
+approaches provide rich semantic information but often 
+suffer from high computatio nal cost and sensitivity to 
+illumination variations, particularly when deployed on 
+embedded or cloud -dependent platforms [1], [6], [9]. In 
+contrast, distance -sensor-based systems offer fast response 
+and low power consumption but lack contextual awareness, 
+leading to higher false -positive rates [3], [7]. The proposed 
+system bridges this gap by integrating a lightweight Edge-AI 
+vision model with ultrasonic and infrared sensing through 
+decision-level fusion, enabling both semantic perception and 
+reliable proxi mity awareness on a resource -constrained 
+device. Compared to vision -only embedded solutions 
+reported in the literature [10], the proposed approach 
+achieves improved robustness while maintaining real -time 
+inference and low energy consumption. The observed 
+accuracy improvement of approximately 8% over single -
+modality approaches aligns with findings from multimodal 
+fusion studies [7], while demonstrating that effective fusion 
+can be achieved without computationally complex 
+architectures. These results highligh t the practical feasibility 
+of combining TinyML-based vision and multimodal sensing 
+for assistive navigation in real-world environments. 
+V. CONCLUSION 
+ 
+This paper presented an Edge -AI and multimodal sensor 
+fusion–based smart stick designed to assist visually impaired 
+individuals through reliable real -time obstacle detection. By 
+integrating a TinyML-optimized vision model with ultrasonic 
+and infrared sensi ng on a resource -constrained embedded 
+platform, the proposed system achieves accurate 
+environmental perception without reliance on cloud 
+computing. Experimental results demonstrate that the fusion-
+based approach improves detection accuracy while 
+maintaining low inference latency and energy efficiency 
+suitable for continuous daily use. The findings confirm that 
+combining embedded vision with complementary distance 
+sensing provides a practical balance between accuracy, 
+responsiveness, and power consumption. F uture work will 
+focus on extending the system to more complex outdoor 
+environments, incorporating adaptive feedback mechanisms, 
+and exploring continual learning strategies to further enhance 
+long-term usability. 
+REFERENCES 
+ 
+[1] Wazirali, R., Ashrif, F.F. and Ahmad, R., 2025. AI smart cane technology 
+and assistive navigation for visually impaired users: an 
+overview. Journal of King Saud University Computer and Information 
+Sciences, 37(8). 
+[2] Abidi, M.H., Siddiquee, A.N., Alkhalefah, H. and Srivastava, V ., 2024. 
+A comprehensive review of navigation systems for visually impaired 
+individuals. Heliyon, 10(11). 
+[3] Okolo, G.I., Althobaiti, T. and Ramzan, N., 2024. Assistive systems for 
+visually impaired persons: challenges and opportunities for navigation 
+assistance. Sensors, 24(11), p.3572. 
+[4] Lavric, A., Beguni, C., Zadobrischi, E., Căilean, A.M. and Avătămăniței, 
+S.A., 2024. A comprehensive survey on emerging assistive technologies 
+for visually impaired persons: Lighting the path with visible light 
+communications and artificial intelligence innovations. Sensors, 24(15), 
+p.4834. 
+[5] Zhang, X., Huang, X., Ding, Y ., Long, L., Li, W. and Xu, X., 2024. 
+Advancements in Smart Wearable Mobility Aids for Visual 
+Impairments: A Bibliometric Narrative Review.  Sensors, 24(24), 
+p.7986. 
+[6] Casanova, E., Guffanti, D. and Hidalgo, L., 2025. Technological 
+advancements in human navigation for the visually impaired: A 
+systematic review. Sensors, 25(7), p.2213. 
+[7] Theodorou, P ., Tsiligkos, K. and Meliones, A., 2023. Multi-sensor data 
+fusion solutions for blind and visually impaired: Research and 
+commercial navigation applications for indoor and outdoor 
+spaces. Sensors, 23(12), p.5411. 
+[8] Han, Y ., Beheshti, M., Jones, B., Hudson, T.E., Seiple, W.H. and Rizzo, 
+J.R., 2024. Wearables for persons with blindness and low vision: form 
+factor matters. Assistive Technology, 36(1), pp.60-63. 
+[9] Joseph, A.M., Kian, A. and Begg, R., 2023. State -of-the-art review on 
+wearable obstacle detection systems developed for assistive 
+technologies and footwear. Sensors, 23(5), p.2802. 
+[10] Heydari, S. and Mahmoud, Q.H., 2025. Tiny machine learning and on -
+device inference: A survey of applications, challenges, and future 
+directions. Sensors, 25(10), p.3191. 
+[11] Cordova-Cardenas, R., Amor, D. and Gutiérrez, Á., 2025. Edge AI in 
+Practice: A Survey and Deployment Framework for Neural Networks on 
+Embedded Systems. Electronics, 14(24), p.4877. 
+[12] Wang, T., Guo, J., Zhang, B., Yang, G. and Li, D., 2025. Deploying AI 
+on Edge: Advancement and Challenges in Edge 
+Intelligence. Mathematics, 13(11), p.1878. 
+[13] Xu, Y ., Khan, T.M., Song, Y . and Meijering, E., 2025. Edge deep learning 
+in computer vision and medical diagnostics: a comprehensive 
+survey. Artificial Intelligence Review, 58(3), p.93. 
+[14] Long, C., Xia, C., Zhao, Z., Fu, H. and Chen, Y ., 2024. AI -Driven 
+Sensing Technology. Sensors, 24(10), p.2958. 
+[15] Yeong, D.J., Panduru, K. and Walsh, J., 2025. Exploring the unseen: A 
+survey of multi -sensor fusion and the role of explainable ai (xai) in 
+autonomous vehicles. Sensors, 25(3), p.856. 
+Proceedings of the 9th International Conference on Intelligent Computing and Control Systems (ICICCS-2026)
+DVD Part Number: CFP26K74-DVD; ISBN: 979-8-3315-8946-2
+979-8-3315-8947-9/26/$31.00 ©2026 IEEE 1052

@@ -1,15 +1,20 @@
 import os
 import re
 from pypdf import PdfReader
-import chromadb
+from supabase import create_client
 from google import genai
+from google.genai import types
 from dotenv import load_dotenv
 
+# Resolve absolute paths relative to script location
+script_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(script_dir)
+
 # Load environment variables from .env.local and fallback to .env
-load_dotenv(dotenv_path=".env.local")
+load_dotenv(dotenv_path=os.path.join(project_root, ".env.local"))
 if not os.environ.get("GEMINI_API_KEY"):
     os.environ.pop("GEMINI_API_KEY", None)  # Remove empty/null key so fallback .env can load it
-load_dotenv(dotenv_path=".env")
+load_dotenv(dotenv_path=os.path.join(project_root, ".env"))
 
 # Setup Gemini API Client
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
@@ -21,9 +26,11 @@ else:
     client = genai.Client(api_key=GEMINI_API_KEY)
 
 def extract_text_from_pdf(pdf_path):
+    print(f"Extracting text from: {pdf_path}")
     reader = PdfReader(pdf_path)
     text = ""
-    for page in reader.pages:
+    for i, page in enumerate(reader.pages):
+        text += f"\n--- Page {i+1} ---\n"
         t = page.extract_text()
         if t:
             text += t + "\n"
@@ -121,20 +128,31 @@ def main():
         print("ERROR: GEMINI_API_KEY is not set. Please set it before running this script.")
         return
         
-    print("Loading PDFs...")
-    pdf_files = ["Sujith_AI_Engineer-2.pdf", "SUJITH_AI-Developer.pdf"]
+    documents_dir = os.path.join(project_root, "documents")
+    print(f"Scanning documents directory: {documents_dir}...")
     all_chunks = []
     
-    for file in pdf_files:
-        path = os.path.join("d:\\JithX", file)
-        if os.path.exists(path):
-            print(f"Parsing: {file}")
+    if os.path.exists(documents_dir):
+        pdf_files = [f for f in os.listdir(documents_dir) if f.endswith(".pdf")]
+        for file in pdf_files:
+            path = os.path.join(documents_dir, file)
+            # Extract text
             text = extract_text_from_pdf(path)
+            
+            # Save extracted text to a text file next to the PDF
+            txt_file_name = file.replace(".pdf", "_text.txt")
+            txt_path = os.path.join(documents_dir, txt_file_name)
+            with open(txt_path, "w", encoding="utf-8") as f:
+                f.write(text)
+            print(f"Saved text copy to: {txt_path}")
+            
+            # Chunk the extracted text
             chunks = chunk_resume_text(text, file)
             all_chunks.extend(chunks)
             print(f"Extracted {len(chunks)} chunks from {file}")
-        else:
-            print(f"PDF not found: {path}")
+    else:
+        print(f"ERROR: Documents folder not found at {documents_dir}")
+        return
             
     if not all_chunks:
         print("No chunks found. Exiting.")
@@ -142,19 +160,19 @@ def main():
         
     print(f"Total chunks extracted: {len(all_chunks)}")
     
-    # Initialize ChromaDB persistent client
-    chroma_path = "d:\\JithX\\data\\chromadb"
-    print(f"Initializing ChromaDB at {chroma_path}")
-    chroma_client = chromadb.PersistentClient(path=chroma_path)
+    # Initialize Supabase client
+    supabase_url = os.environ.get("SUPABASE_URL")
+    supabase_key = os.environ.get("SUPABASE_KEY")
+    if not supabase_url or not supabase_key:
+        print("ERROR: SUPABASE_URL and SUPABASE_KEY environment variables must be set.")
+        return
+        
+    print(f"Connecting to Supabase at {supabase_url}...")
+    supabase = create_client(supabase_url, supabase_key)
     
-    collection = chroma_client.get_or_create_collection(name="sujith_portfolio")
+    print("Generating Gemini embeddings and storing in Supabase...")
     
-    print("Generating Gemini embeddings and storing in ChromaDB...")
-    
-    documents = []
-    embeddings = []
-    metadatas = []
-    ids = []
+    rows = []
     
     for i, chunk in enumerate(all_chunks):
         text_content = chunk["text"]
@@ -164,28 +182,33 @@ def main():
             # Generate embedding using the new GenAI Client
             response = client.models.embed_content(
                 model="gemini-embedding-2",
-                contents=text_content
+                contents=text_content,
+                config=types.EmbedContentConfig(
+                    output_dimensionality=3072
+                )
             )
             embedding = response.embeddings[0].values
             
-            documents.append(text_content)
-            embeddings.append(embedding)
-            metadatas.append(metadata)
-            ids.append(f"chunk_{i}")
+            rows.append({
+                "content": text_content,
+                "metadata": metadata,
+                "embedding": embedding
+            })
             
             print(f"Embedded chunk {i+1}/{len(all_chunks)}")
         except Exception as e:
             print(f"Error embedding chunk {i}: {e}")
             
-    if documents:
-        print(f"Saving {len(documents)} vectors to ChromaDB...")
-        collection.add(
-            documents=documents,
-            embeddings=embeddings,
-            metadatas=metadatas,
-            ids=ids
-        )
-        print("ChromaDB vector store generated successfully!")
+    if rows:
+        print(f"Saving {len(rows)} vectors to Supabase...")
+        try:
+            # Clear existing data to prevent duplicate ingestion entries
+            supabase.table("documents").delete().neq("id", 0).execute()
+            # Batch insert rows
+            supabase.table("documents").insert(rows).execute()
+            print("Supabase vector store populated successfully!")
+        except Exception as e:
+            print(f"Error saving to Supabase: {e}")
     else:
         print("No embeddings generated.")
 

@@ -11,8 +11,10 @@ from pydantic import BaseModel
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
-import chromadb
+from supabase import create_client
 import pypdf
+import math
+import httpx
 
 # Load environment variables from .env.local and fallback to .env
 load_dotenv(dotenv_path=".env.local")
@@ -40,21 +42,101 @@ if GEMINI_API_KEY:
 else:
     print("WARNING: GEMINI_API_KEY environment variable is not set. API calls to Gemini will fail.")
 
-# Initialize ChromaDB Client
-CHROMA_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "chromadb")
-chroma_client = None
-collection = None
+# Initialize Supabase Client
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
+supabase_client = None
 
-def get_chroma_collection():
-    global chroma_client, collection
-    if collection is None:
-        try:
-            chroma_client = chromadb.PersistentClient(path=CHROMA_PATH)
-            collection = chroma_client.get_collection("sujith_portfolio")
-        except Exception as e:
-            print(f"Error loading ChromaDB from {CHROMA_PATH}: {e}")
-            collection = None
-    return collection
+if SUPABASE_URL and SUPABASE_KEY:
+    try:
+        supabase_client = create_client(SUPABASE_URL, SUPABASE_KEY)
+    except Exception as e:
+        print(f"Error initializing Supabase client: {e}")
+else:
+    print("WARNING: SUPABASE_URL and SUPABASE_KEY environment variables are not set.")
+
+def query_supabase_vectors(query_embedding: list, n_results: int = 6) -> list:
+    if not supabase_client:
+        print("ERROR: Supabase client is not initialized.")
+        return []
+    try:
+        response = supabase_client.rpc("match_documents", {
+            "query_embedding": query_embedding,
+            "match_threshold": 0.3,
+            "match_count": n_results
+        }).execute()
+        return [item["content"] for item in response.data]
+    except Exception as e:
+        print(f"Supabase RPC Error: {e}")
+        return []
+
+async def stream_from_grok(system_instruction: str, history: List[ChatMessage], query: str, api_key: str):
+    messages = [{"role": "system", "content": system_instruction}]
+    for msg in history:
+        messages.append({
+            "role": "assistant" if msg.role == "model" else "user",
+            "content": msg.parts
+        })
+    messages.append({"role": "user", "content": query})
+    
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "model": "grok-2-1212",
+        "messages": messages,
+        "stream": True
+    }
+    
+    async with httpx.AsyncClient(timeout=30.0) as client_httpx:
+        async with client_httpx.stream(
+            "POST", 
+            "https://api.x.ai/v1/chat/completions", 
+            headers=headers, 
+            json=payload
+        ) as response:
+            if response.status_code != 200:
+                error_body = await response.aread()
+                raise Exception(f"Grok API error (HTTP {response.status_code}): {error_body.decode()}")
+                
+            async for line in response.aiter_lines():
+                if line.startswith("data: "):
+                    data_str = line[6:].strip()
+                    if data_str == "[DONE]":
+                        break
+                    try:
+                        chunk_json = json.loads(data_str)
+                        content = chunk_json["choices"][0]["delta"].get("content", "")
+                        if content:
+                            yield content
+                    except Exception:
+                        pass
+
+async def query_grok(prompt: str, api_key: str, response_format: Optional[dict] = None) -> str:
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "model": "grok-2-1212",
+        "messages": [
+            {"role": "user", "content": prompt}
+        ]
+    }
+    if response_format:
+        payload["response_format"] = response_format
+        
+    async with httpx.AsyncClient(timeout=60.0) as client_httpx:
+        response = await client_httpx.post(
+            "https://api.x.ai/v1/chat/completions",
+            headers=headers,
+            json=payload
+        )
+        if response.status_code != 200:
+            raise Exception(f"Grok API error (HTTP {response.status_code}): {response.text}")
+        data = response.json()
+        return data["choices"][0]["message"]["content"]
 
 # Pydantic Request Models
 class ChatMessage(BaseModel):
@@ -83,7 +165,10 @@ def embed_text(text: str):
     try:
         response = client.models.embed_content(
             model="gemini-embedding-2",
-            contents=text
+            contents=text,
+            config=types.EmbedContentConfig(
+                output_dimensionality=3072
+            )
         )
         return response.embeddings[0].values
     except Exception as e:
@@ -111,11 +196,17 @@ def extract_text_from_docx(file_bytes: bytes) -> str:
 # Endpoints
 @app.get("/api/health")
 def health_check():
-    coll = get_chroma_collection()
-    db_status = "Available" if coll is not None else "Unavailable"
+    db_status = "Available" if supabase_client is not None else "Unavailable"
+    if supabase_client:
+        try:
+            # Query table for quick validation
+            supabase_client.table("documents").select("id", count="exact").limit(1).execute()
+            db_status = "Available (Connected)"
+        except Exception as e:
+            db_status = f"Unavailable: {str(e)}"
     return {
         "status": "healthy",
-        "chromadb": db_status,
+        "supabase": db_status,
         "api_key_configured": GEMINI_API_KEY is not None
     }
 
@@ -152,10 +243,9 @@ async def upload_jd_file(file: UploadFile = File(...)):
 
 @app.post("/api/chat")
 async def chat_twin(payload: ChatRequest):
-    coll = get_chroma_collection()
-    if coll is None:
+    if not supabase_client:
         async def error_generator():
-            yield "System database is not initialized yet. Please run the ingestion script."
+            yield "System database is not configured yet. Please configure Supabase variables."
         return StreamingResponse(error_generator(), media_type="text/plain")
         
     query = payload.message
@@ -165,16 +255,7 @@ async def chat_twin(payload: ChatRequest):
     query_emb = embed_text(query)
     
     # 2. Retrieve matched resume chunks
-    try:
-        results = coll.query(
-            query_embeddings=[query_emb],
-            n_results=6
-        )
-        matched_docs = results['documents'][0]
-    except Exception as e:
-        print(f"ChromaDB Query Error: {e}")
-        matched_docs = []
-        
+    matched_docs = query_supabase_vectors(query_emb, n_results=6)
     context_text = "\n\n".join(matched_docs)
     
     # 3. Build system instruction
@@ -214,6 +295,20 @@ Rules of conversation:
     
     # 5. Yield content stream
     async def response_streamer():
+        grok_api_key = os.environ.get("GROK_API_KEY") or os.environ.get("XAI_API_KEY")
+        
+        # If Gemini is not set up, go straight to Grok
+        if not client:
+            if grok_api_key:
+                try:
+                    async for chunk in stream_from_grok(system_instruction, history, query, grok_api_key):
+                        yield chunk
+                except Exception as ge:
+                    yield f"\n[Grok Error: {str(ge)}]"
+            else:
+                yield "System configuration error: Neither Gemini nor Grok API Key is configured."
+            return
+
         try:
             response_stream = client.models.generate_content_stream(
                 model="gemini-2.5-flash",
@@ -226,15 +321,23 @@ Rules of conversation:
                 if chunk.text:
                     yield chunk.text
         except Exception as e:
-            yield f"\n[Stream Error: {str(e)}]"
+            # Fallback to Grok if Gemini fails mid-run
+            if grok_api_key:
+                yield f"\n[Gemini Error: {str(e)}. Falling back to Grok...]\n"
+                try:
+                    async for chunk in stream_from_grok(system_instruction, history, query, grok_api_key):
+                        yield chunk
+                except Exception as ge:
+                    yield f"\n[Grok Fallback Error: {str(ge)}]"
+            else:
+                yield f"\n[Stream Error: {str(e)}]"
 
     return StreamingResponse(response_streamer(), media_type="text/plain")
 
 @app.post("/api/recruiter")
 async def match_job(payload: JobMatchRequest):
-    coll = get_chroma_collection()
-    if coll is None:
-        raise HTTPException(status_code=500, detail="Database not initialized.")
+    if not supabase_client:
+        raise HTTPException(status_code=500, detail="Database not configured.")
         
     jd = payload.job_description
     if not jd.strip():
@@ -244,11 +347,7 @@ async def match_job(payload: JobMatchRequest):
     jd_emb = embed_text(jd)
     
     # 2. Retrieve matched chunks
-    results = coll.query(
-        query_embeddings=[jd_emb],
-        n_results=8
-    )
-    matched_docs = results['documents'][0]
+    matched_docs = query_supabase_vectors(jd_emb, n_results=8)
     context_text = "\n\n".join(matched_docs)
     
     # 3. Structure response
@@ -271,33 +370,30 @@ You must return a structured JSON response containing:
 6. "recommendations": a concise list of reasons why the recruiter should hire Sujith for this position.
 """
 
+    grok_api_key = os.environ.get("GROK_API_KEY") or os.environ.get("XAI_API_KEY")
+    if not grok_api_key:
+        raise HTTPException(status_code=500, detail="Grok API key is not configured in the environment.")
+
     try:
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                response_mime_type="application/json"
-            )
+        grok_response = await query_grok(
+            prompt=prompt,
+            api_key=grok_api_key,
+            response_format={"type": "json_object"}
         )
-        return json.loads(response.text)
+        return json.loads(grok_response)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Gemini Job Analysis failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Grok Job Analysis failed: {str(e)}")
 
 @app.post("/api/interview")
 async def interview_me(payload: InterviewRequest):
-    coll = get_chroma_collection()
-    if coll is None:
-        raise HTTPException(status_code=500, detail="Database not initialized.")
+    if not supabase_client:
+        raise HTTPException(status_code=500, detail="Database not configured.")
         
     question = payload.question
     
     # 1. Retrieve chunks
     q_emb = embed_text(question)
-    results = coll.query(
-        query_embeddings=[q_emb],
-        n_results=5
-    )
-    matched_docs = results['documents'][0]
+    matched_docs = query_supabase_vectors(q_emb, n_results=5)
     context_text = "\n\n".join(matched_docs)
     
     # 2. Call Gemini
