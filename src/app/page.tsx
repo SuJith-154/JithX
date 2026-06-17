@@ -9,7 +9,7 @@ import InterviewConsole from "@/components/InterviewConsole";
 import Timeline from "@/components/Timeline";
 import ContactConsole from "@/components/ContactConsole";
 import GenerateStoryButton from "@/components/GenerateStoryButton"; // Let's make a quick button component for dynamic story fetching!
-import ThemeToggle from "@/components/ThemeToggle";
+
 
 // Type Definitions
 interface PersonalData {
@@ -112,7 +112,6 @@ export default async function Home() {
             >
               <Award className="w-4 h-4" /> Download Resume
             </a>
-            <ThemeToggle />
           </div>
         </header>
 

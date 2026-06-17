@@ -1,5 +1,5 @@
 import ChatTerminal from "@/components/ChatTerminal";
-import ThemeToggle from "@/components/ThemeToggle";
+
 
 export default function ChatPage() {
   return (
@@ -17,7 +17,6 @@ export default function ChatPage() {
             </h1>
             <div className="flex items-center gap-3">
               <span className="text-[10px] text-white/30 font-mono">Secure Node Connected</span>
-              <ThemeToggle />
             </div>
           </div>
           <ChatTerminal isPage={true} />
