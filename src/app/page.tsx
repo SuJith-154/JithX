@@ -9,6 +9,7 @@ import InterviewConsole from "@/components/InterviewConsole";
 import Timeline from "@/components/Timeline";
 import ContactConsole from "@/components/ContactConsole";
 import GenerateStoryButton from "@/components/GenerateStoryButton"; // Let's make a quick button component for dynamic story fetching!
+import VisitLogger from "@/components/VisitLogger";
 
 
 // Type Definitions
@@ -63,6 +64,7 @@ export default async function Home() {
 
   return (
     <div className="min-h-screen grid-bg relative selection:bg-purple-500/30 selection:text-white">
+      <VisitLogger page="home" />
       {/* Glow overlays */}
       <div className="absolute inset-0 radial-overlay pointer-events-none z-0" />
       <div className="absolute inset-0 radial-overlay-blue pointer-events-none z-0" />

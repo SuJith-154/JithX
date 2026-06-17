@@ -167,16 +167,29 @@ async def log_visit(request: Request, endpoint: str):
         else:
             device_type = "Desktop"
         
-        supabase_client.table("visits").insert({
-            "ip_address": ip,
-            "country": country,
-            "region": region,
-            "city": city,
-            "user_agent": user_agent,
-            "device_type": device_type,
-            "referer": referer,
-            "endpoint_visited": endpoint
-        }).execute()
+        try:
+            # Try inserting all fields (including new analytics fields)
+            supabase_client.table("visits").insert({
+                "ip_address": ip,
+                "country": country,
+                "region": region,
+                "city": city,
+                "user_agent": user_agent,
+                "device_type": device_type,
+                "referer": referer,
+                "endpoint_visited": endpoint
+            }).execute()
+        except Exception as insert_err:
+            logger.warning(f"Visits full insert failed, retrying with basic fields: {insert_err}")
+            # Fallback to basic fields in case device_type/referer columns are missing in Supabase
+            supabase_client.table("visits").insert({
+                "ip_address": ip,
+                "country": country,
+                "region": region,
+                "city": city,
+                "user_agent": user_agent,
+                "endpoint_visited": endpoint
+            }).execute()
         logger.info(f"Log visit recorded: {city}, {country} visited {endpoint}")
         
         # Fallback automated cleanup for visits (12 months TTL)
@@ -726,3 +739,8 @@ async def run_cleanup(request: Request):
     except Exception as e:
         logger.error(f"Error running manual cleanup: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/log-visit")
+async def log_page_visit(request: Request, page: str = "home"):
+    await log_visit(request, page)
+    return {"status": "logged"}

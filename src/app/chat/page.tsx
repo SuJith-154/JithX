@@ -1,9 +1,10 @@
 import ChatTerminal from "@/components/ChatTerminal";
-
+import VisitLogger from "@/components/VisitLogger";
 
 export default function ChatPage() {
   return (
     <div className="min-h-screen flex flex-col p-4 md:p-8 relative selection:bg-purple-500/30 selection:text-white">
+      <VisitLogger page="chat" />
       {/* Glow overlays */}
       <div className="absolute inset-0 radial-overlay pointer-events-none z-0" />
       <div className="absolute inset-0 radial-overlay-blue pointer-events-none z-0" />
