@@ -105,7 +105,7 @@ export default function ContactConsole({ contact }: ContactConsoleProps) {
           {/* Resume Download */}
           <a
             href={contact.resumeUrl}
-            download="Sujith_Senthilraj_Resume.pdf"
+            download="SUJITH_JithX.pdf"
             className="flex items-center justify-between p-3 bg-cyan-500/10 border border-cyan-500/20 hover:border-cyan-500/40 rounded-lg text-cyan-300 hover:text-cyan-200 transition-all cursor-pointer font-bold shadow-[0_0_10px_rgba(0,240,255,0.05)] mt-4"
           >
             <div className="flex items-center gap-2">

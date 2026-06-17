@@ -107,7 +107,7 @@ export default async function Home() {
           <div className="flex items-center gap-3 shrink-0 self-stretch md:self-auto">
             <a
               href={contact?.resumeUrl}
-              download="Sujith_Senthilraj_Resume.pdf"
+              download="SUJITH_JithX.pdf"
               className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-white font-mono font-bold text-xs py-3 px-5 rounded-xl transition-all shadow-[0_0_20px_rgba(191,90,242,0.25)] hover:shadow-[0_0_25px_rgba(191,90,242,0.4)] cursor-pointer"
             >
               <Award className="w-4 h-4" /> Download Resume

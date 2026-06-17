@@ -22,6 +22,10 @@ if not os.environ.get("GEMINI_API_KEY"):
     os.environ.pop("GEMINI_API_KEY", None)  # Remove empty/null key so fallback .env can load it
 load_dotenv(dotenv_path=".env")
 
+import logging
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logger = logging.getLogger("JithX-Backend")
+
 # Initialize FastAPI
 app = FastAPI(title="JithX API", description="AI Digital Twin Backend")
 
@@ -57,20 +61,24 @@ else:
 
 def query_supabase_vectors(query_embedding: list, n_results: int = 6) -> list:
     if not supabase_client:
-        print("ERROR: Supabase client is not initialized.")
+        logger.error("Supabase client is not initialized.")
         return []
+    logger.info(f"Querying Supabase vectors for semantic matching (limit: {n_results})...")
     try:
         response = supabase_client.rpc("match_documents", {
             "query_embedding": query_embedding,
             "match_threshold": 0.3,
             "match_count": n_results
         }).execute()
-        return [item["content"] for item in response.data]
+        results = [item["content"] for item in response.data]
+        logger.info(f"Successfully retrieved {len(results)} matching segments from Supabase.")
+        return results
     except Exception as e:
-        print(f"Supabase RPC Error: {e}")
+        logger.error(f"Supabase RPC Exception: {e}")
         return []
 
-async def stream_from_grok(system_instruction: str, history: List[ChatMessage], query: str, api_key: str):
+async def stream_from_grok(system_instruction: str, history: List['ChatMessage'], query: str, api_key: str):
+    logger.info(f"Initiating streaming chat from Grok (model: grok-2-1212). Query: '{query}'")
     messages = [{"role": "system", "content": system_instruction}]
     for msg in history:
         messages.append({
@@ -114,6 +122,7 @@ async def stream_from_grok(system_instruction: str, history: List[ChatMessage], 
                         pass
 
 async def query_grok(prompt: str, api_key: str, response_format: Optional[dict] = None) -> str:
+    logger.info(f"Initiating JSON query to Grok (model: grok-2-1212). Prompt length: {len(prompt)} characters.")
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json"
@@ -161,7 +170,9 @@ class ContactRequest(BaseModel):
 # Helper functions
 def embed_text(text: str):
     if not client:
+        logger.error("Gemini API Client is not configured on the server.")
         raise HTTPException(status_code=500, detail="Gemini API Client is not configured on the server.")
+    logger.info(f"Generating Gemini embedding for text segment (length: {len(text)} characters)...")
     try:
         response = client.models.embed_content(
             model="gemini-embedding-2",
@@ -170,8 +181,11 @@ def embed_text(text: str):
                 output_dimensionality=3072
             )
         )
-        return response.embeddings[0].values
+        embedding = response.embeddings[0].values
+        logger.info(f"Successfully generated embedding vector of length {len(embedding)}.")
+        return embedding
     except Exception as e:
+        logger.error(f"Failed to generate embedding: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to generate embedding: {str(e)}")
 
 def extract_text_from_docx(file_bytes: bytes) -> str:
@@ -190,12 +204,13 @@ def extract_text_from_docx(file_bytes: bytes) -> str:
                     texts.append(p_text)
             return "\n".join(texts)
     except Exception as e:
-        print(f"Error parsing docx: {e}")
+        logger.error(f"Error parsing docx: {e}")
         return ""
 
 # Endpoints
 @app.get("/api/health")
 def health_check():
+    logger.info("Health check requested.")
     db_status = "Available" if supabase_client is not None else "Unavailable"
     if supabase_client:
         try:
@@ -204,6 +219,7 @@ def health_check():
             db_status = "Available (Connected)"
         except Exception as e:
             db_status = f"Unavailable: {str(e)}"
+    logger.info("Health check complete.")
     return {
         "status": "healthy",
         "supabase": db_status,
@@ -212,8 +228,10 @@ def health_check():
 
 @app.post("/api/recruiter/upload")
 async def upload_jd_file(file: UploadFile = File(...)):
+    logger.info(f"File upload initiated: {file.filename}")
     filename = file.filename.lower()
     if not (filename.endswith(".pdf") or filename.endswith(".docx") or filename.endswith(".doc")):
+        logger.warning(f"Unsupported file format: {filename}")
         raise HTTPException(status_code=400, detail="Unsupported file format. Please upload PDF or DOCX.")
         
     try:
@@ -235,15 +253,20 @@ async def upload_jd_file(file: UploadFile = File(...)):
             text = re.sub(r'\s+', ' ', text).strip()
             
         if not text.strip():
+            logger.warning("Empty text extracted from file.")
             raise HTTPException(status_code=400, detail="Could not extract text from the uploaded file.")
             
+        logger.info("File processed successfully.")
         return {"text": text}
     except Exception as e:
+        logger.error(f"Failed to process file: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to process file: {str(e)}")
 
 @app.post("/api/chat")
 async def chat_twin(payload: ChatRequest):
+    logger.info(f"Chat request received. Query: '{payload.message}' | History size: {len(payload.history)}")
     if not supabase_client:
+        logger.error("Supabase database is not configured. Aborting chat request.")
         async def error_generator():
             yield "System database is not configured yet. Please configure Supabase variables."
         return StreamingResponse(error_generator(), media_type="text/plain")
@@ -263,7 +286,7 @@ async def chat_twin(payload: ChatRequest):
 You are the AI Digital Twin of Sujith Senthilraj (Sujith S), a highly skilled Junior AI Engineer.
 Your goal is to represent Sujith to recruiters, developers, and visitors in an intelligent, friendly, professional, and confident manner.
 
-Here is the source-of-truth information about Sujith extracted directly from his resume PDFs:
+Here is the source-of-truth information about Sujith extracted directly from his resume and portfolio documents (including published research papers):
 ---
 {context_text}
 ---
@@ -296,19 +319,26 @@ Rules of conversation:
     # 5. Yield content stream
     async def response_streamer():
         grok_api_key = os.environ.get("GROK_API_KEY") or os.environ.get("XAI_API_KEY")
+        accumulated_text = []
         
         # If Gemini is not set up, go straight to Grok
         if not client:
             if grok_api_key:
+                logger.warning("Gemini Client not initialized. Falling back directly to Grok stream.")
                 try:
                     async for chunk in stream_from_grok(system_instruction, history, query, grok_api_key):
+                        accumulated_text.append(chunk)
                         yield chunk
+                    logger.info(f"Raw Grok Response: {''.join(accumulated_text)}")
                 except Exception as ge:
+                    logger.error(f"Grok streaming failed: {ge}")
                     yield f"\n[Grok Error: {str(ge)}]"
             else:
+                logger.error("Neither Gemini nor Grok API Keys are configured on Vercel.")
                 yield "System configuration error: Neither Gemini nor Grok API Key is configured."
             return
 
+        logger.info("Requesting Gemini-2.5-flash content stream...")
         try:
             response_stream = client.models.generate_content_stream(
                 model="gemini-2.5-flash",
@@ -319,15 +349,22 @@ Rules of conversation:
             )
             for chunk in response_stream:
                 if chunk.text:
+                    accumulated_text.append(chunk.text)
                     yield chunk.text
+            logger.info(f"Raw Gemini Response: {''.join(accumulated_text)}")
         except Exception as e:
+            logger.error(f"Gemini stream generation failed: {e}")
             # Fallback to Grok if Gemini fails mid-run
             if grok_api_key:
+                logger.warning("Falling back to Grok API after Gemini failure...")
                 yield f"\n[Gemini Error: {str(e)}. Falling back to Grok...]\n"
                 try:
                     async for chunk in stream_from_grok(system_instruction, history, query, grok_api_key):
+                        accumulated_text.append(chunk)
                         yield chunk
+                    logger.info(f"Raw Grok Fallback Response: {''.join(accumulated_text)}")
                 except Exception as ge:
+                    logger.error(f"Grok fallback stream execution failed: {ge}")
                     yield f"\n[Grok Fallback Error: {str(ge)}]"
             else:
                 yield f"\n[Stream Error: {str(e)}]"
@@ -336,11 +373,14 @@ Rules of conversation:
 
 @app.post("/api/recruiter")
 async def match_job(payload: JobMatchRequest):
+    logger.info(f"Job Match analysis requested. JD input length: {len(payload.job_description)} characters.")
     if not supabase_client:
+        logger.error("Supabase database not configured for Job Match.")
         raise HTTPException(status_code=500, detail="Database not configured.")
         
     jd = payload.job_description
     if not jd.strip():
+        logger.warning("Job description was empty.")
         return {"error": "Job Description is empty."}
         
     # 1. Embed JD
@@ -372,6 +412,7 @@ You must return a structured JSON response containing:
 
     grok_api_key = os.environ.get("GROK_API_KEY") or os.environ.get("XAI_API_KEY")
     if not grok_api_key:
+        logger.error("Grok API key missing during job match evaluation.")
         raise HTTPException(status_code=500, detail="Grok API key is not configured in the environment.")
 
     try:
@@ -380,13 +421,18 @@ You must return a structured JSON response containing:
             api_key=grok_api_key,
             response_format={"type": "json_object"}
         )
-        return json.loads(grok_response)
+        result_json = json.loads(grok_response)
+        logger.info(f"Successfully calculated Fit Score: {result_json.get('match_score')}% using Grok.")
+        return result_json
     except Exception as e:
+        logger.error(f"Grok Job Match processing failed: {e}")
         raise HTTPException(status_code=500, detail=f"Grok Job Analysis failed: {str(e)}")
 
 @app.post("/api/interview")
 async def interview_me(payload: InterviewRequest):
+    logger.info(f"Mock interview question asked: '{payload.question}'")
     if not supabase_client:
+        logger.error("Supabase database not configured for interview.")
         raise HTTPException(status_code=500, detail="Database not configured.")
         
     question = payload.question
@@ -412,16 +458,20 @@ Keep the answer under 150 words, structured like a spoken response.
 """
 
     try:
+        logger.info("Querying Gemini (gemini-2.5-flash) for interview answer...")
         response = client.models.generate_content(
             model="gemini-2.5-flash",
             contents=prompt
         )
+        logger.info("Successfully generated mock interview response.")
         return {"answer": response.text}
     except Exception as e:
+        logger.error(f"Gemini mock interview response generation failed: {e}")
         raise HTTPException(status_code=500, detail=f"Interview response failed: {str(e)}")
 
 @app.get("/api/story")
 async def get_career_story():
+    logger.info("Career story generation requested.")
     # Read raw JSON files from data directory
     data_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
     try:
@@ -432,6 +482,7 @@ async def get_career_story():
         with open(os.path.join(data_dir, "education.json"), "r") as f:
             education = json.load(f)
     except Exception as e:
+        logger.error(f"Failed to read static data files for story: {e}")
         return {"story": f"Could not load biography data files: {str(e)}"}
         
     prompt = f"""
@@ -451,12 +502,15 @@ Keep the story around 250-300 words.
 """
 
     try:
+        logger.info("Generating storytelling career profile using Gemini (gemini-2.5-flash)...")
         response = client.models.generate_content(
             model="gemini-2.5-flash",
             contents=prompt
         )
+        logger.info("Successfully generated career biography story.")
         return {"story": response.text}
     except Exception as e:
+        logger.error(f"Gemini career biography story generation failed: {e}")
         raise HTTPException(status_code=500, detail=f"Story generation failed: {str(e)}")
 
 @app.post("/api/contact")

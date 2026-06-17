@@ -44,6 +44,21 @@ def chunk_resume_text(text, source_name):
     lines = text.split("\n")
     chunks = []
     
+    # Check if this is a research paper document
+    is_paper = "paper" in source_name.lower() or "publishing" in source_name.lower()
+    paper_title = "Research Paper"
+    if is_paper:
+        # Extract the title from the first few non-empty lines
+        title_lines = []
+        for line in lines[:20]:
+            line_strip = line.strip()
+            if line_strip and not line_strip.startswith("---") and "page" not in line_strip.lower() and len(line_strip) > 10:
+                title_lines.append(line_strip)
+                if len(title_lines) >= 3:
+                    break
+        if title_lines:
+            paper_title = f"Research Paper [{', '.join(title_lines)}]"
+
     current_section = "General"
     current_item = ""
     
@@ -69,8 +84,9 @@ def chunk_resume_text(text, source_name):
             if any(kw in line_strip.lower() for kw in keywords) and len(line_strip) < 40 and not line_strip.startswith("•") and not line_strip.startswith("-"):
                 if buffer:
                     # Save previous section chunks
+                    prefix = f"{paper_title} - {current_section}: " if is_paper else f"{current_section} | "
                     chunks.append({
-                        "text": f"{current_section} | " + "\n".join(buffer),
+                        "text": prefix + "\n".join(buffer),
                         "metadata": {"section": current_section.lower(), "source": source_name}
                     })
                     buffer = []
@@ -87,16 +103,18 @@ def chunk_resume_text(text, source_name):
             if line_strip.startswith("•") or line_strip.startswith("-") or line_strip.startswith("") or line_strip.startswith("o"):
                 # Save previous buffer as a chunk
                 if buffer:
+                    prefix = f"{paper_title} - {current_section} - {current_item}: " if is_paper else f"{current_section} - {current_item}: "
                     chunks.append({
-                        "text": f"{current_section} - {current_item}: " + " ".join(buffer),
+                        "text": prefix + " ".join(buffer),
                         "metadata": {"section": current_section.lower(), "source": source_name}
                     })
                     buffer = []
                 buffer.append(line_strip)
             elif len(line_strip) < 50 and any(keyword in line_strip for keyword in ["Prayag.ai", "EasyHire.ai", "Nanban Fund", "Salary Prediction", "PMT", "Knowledge Base"]):
                 if buffer:
+                    prefix = f"{paper_title} - {current_section} - {current_item}: " if is_paper else f"{current_section} - {current_item}: "
                     chunks.append({
-                        "text": f"{current_section} - {current_item}: " + " ".join(buffer),
+                        "text": prefix + " ".join(buffer),
                         "metadata": {"section": current_section.lower(), "source": source_name}
                     })
                     buffer = []
@@ -107,15 +125,19 @@ def chunk_resume_text(text, source_name):
             buffer.append(line_strip)
             # For skills or education, chunk every 3-4 lines to keep chunks granular
             if len(buffer) >= 4:
+                prefix = f"{paper_title} - {current_section}: " if is_paper else f"{current_section}: "
                 chunks.append({
-                    "text": f"{current_section}: " + " ".join(buffer),
+                    "text": prefix + " ".join(buffer),
                     "metadata": {"section": current_section.lower(), "source": source_name}
                 })
                 buffer = []
                 
     # Flush remaining buffer
     if buffer:
-        prefix = f"{current_section} - {current_item}: " if current_section in ["EXPERIENCE", "KEY PROJECTS"] and current_item else f"{current_section}: "
+        if is_paper:
+            prefix = f"{paper_title} - {current_section}: "
+        else:
+            prefix = f"{current_section} - {current_item}: " if current_section in ["EXPERIENCE", "KEY PROJECTS"] and current_item else f"{current_section}: "
         chunks.append({
             "text": prefix + " ".join(buffer),
             "metadata": {"section": current_section.lower(), "source": source_name}
