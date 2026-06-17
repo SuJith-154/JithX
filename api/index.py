@@ -661,8 +661,9 @@ def send_contact_email(payload: ContactRequest):
 ADMIN_PASSCODE = os.environ.get("ADMIN_PASSCODE", "sujithadmin")
 
 @app.get("/api/admin/visits")
-async def get_visits(request: Request, x_admin_passcode: Optional[str] = Header(None)):
-    if x_admin_passcode != ADMIN_PASSCODE:
+async def get_visits(request: Request):
+    x_admin_passcode = request.headers.get("X-Admin-Passcode") or request.headers.get("x-admin-passcode")
+    if not x_admin_passcode or x_admin_passcode.strip().lower() != ADMIN_PASSCODE.lower():
         raise HTTPException(status_code=401, detail="Unauthorized: Invalid passcode.")
     if not supabase_client:
         raise HTTPException(status_code=500, detail="Database not configured.")
@@ -674,8 +675,9 @@ async def get_visits(request: Request, x_admin_passcode: Optional[str] = Header(
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/admin/chats")
-async def get_chats(request: Request, x_admin_passcode: Optional[str] = Header(None)):
-    if x_admin_passcode != ADMIN_PASSCODE:
+async def get_chats(request: Request):
+    x_admin_passcode = request.headers.get("X-Admin-Passcode") or request.headers.get("x-admin-passcode")
+    if not x_admin_passcode or x_admin_passcode.strip().lower() != ADMIN_PASSCODE.lower():
         raise HTTPException(status_code=401, detail="Unauthorized: Invalid passcode.")
     if not supabase_client:
         raise HTTPException(status_code=500, detail="Database not configured.")
@@ -687,8 +689,9 @@ async def get_chats(request: Request, x_admin_passcode: Optional[str] = Header(N
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/admin/messages")
-async def get_messages(request: Request, x_admin_passcode: Optional[str] = Header(None)):
-    if x_admin_passcode != ADMIN_PASSCODE:
+async def get_messages(request: Request):
+    x_admin_passcode = request.headers.get("X-Admin-Passcode") or request.headers.get("x-admin-passcode")
+    if not x_admin_passcode or x_admin_passcode.strip().lower() != ADMIN_PASSCODE.lower():
         raise HTTPException(status_code=401, detail="Unauthorized: Invalid passcode.")
     if not supabase_client:
         raise HTTPException(status_code=500, detail="Database not configured.")
@@ -700,8 +703,9 @@ async def get_messages(request: Request, x_admin_passcode: Optional[str] = Heade
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/admin/cleanup")
-async def run_cleanup(request: Request, x_admin_passcode: Optional[str] = Header(None)):
-    if x_admin_passcode != ADMIN_PASSCODE:
+async def run_cleanup(request: Request):
+    x_admin_passcode = request.headers.get("X-Admin-Passcode") or request.headers.get("x-admin-passcode")
+    if not x_admin_passcode or x_admin_passcode.strip().lower() != ADMIN_PASSCODE.lower():
         raise HTTPException(status_code=401, detail="Unauthorized: Invalid passcode.")
     if not supabase_client:
         raise HTTPException(status_code=500, detail="Database not configured.")
