@@ -4,10 +4,11 @@ import zipfile
 import xml.etree.ElementTree as ET
 from io import BytesIO
 from typing import List, Dict, Optional
-from fastapi import FastAPI, HTTPException, Body, UploadFile, File
+from fastapi import FastAPI, HTTPException, Body, UploadFile, File, Request, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
+from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
@@ -147,6 +148,72 @@ async def query_grok(prompt: str, api_key: str, response_format: Optional[dict] 
         data = response.json()
         return data["choices"][0]["message"]["content"]
 
+async def log_visit(request: Request, endpoint: str):
+    if not supabase_client:
+        return
+    try:
+        ip = request.headers.get("x-forwarded-for", request.client.host if request.client else "unknown")
+        country = request.headers.get("x-vercel-ip-country", "unknown")
+        region = request.headers.get("x-vercel-ip-country-region", "unknown")
+        city = request.headers.get("x-vercel-ip-city", "unknown")
+        user_agent = request.headers.get("user-agent", "unknown")
+        referer = request.headers.get("referer", "direct")
+        
+        user_agent_lower = user_agent.lower()
+        if "ipad" in user_agent_lower or "tablet" in user_agent_lower:
+            device_type = "Tablet"
+        elif "mobile" in user_agent_lower or "android" in user_agent_lower or "iphone" in user_agent_lower:
+            device_type = "Mobile"
+        else:
+            device_type = "Desktop"
+        
+        supabase_client.table("visits").insert({
+            "ip_address": ip,
+            "country": country,
+            "region": region,
+            "city": city,
+            "user_agent": user_agent,
+            "device_type": device_type,
+            "referer": referer,
+            "endpoint_visited": endpoint
+        }).execute()
+        logger.info(f"Log visit recorded: {city}, {country} visited {endpoint}")
+        
+        # Fallback automated cleanup for visits (12 months TTL)
+        try:
+            cutoff = (datetime.utcnow() - timedelta(days=365)).isoformat()
+            supabase_client.table("visits").delete().lt("created_at", cutoff).execute()
+        except Exception as cleanup_err:
+            logger.error(f"Fallback visits cleanup failed: {cleanup_err}")
+            
+    except Exception as e:
+        logger.error(f"Failed to log visit to Supabase: {e}")
+
+async def log_chat(message: str, response: str, request: Request):
+    if not supabase_client:
+        return
+    try:
+        country = request.headers.get("x-vercel-ip-country", "unknown")
+        city = request.headers.get("x-vercel-ip-city", "unknown")
+        
+        supabase_client.table("chat_logs").insert({
+            "message": message,
+            "response": response,
+            "country": country,
+            "city": city
+        }).execute()
+        logger.info("Chat log successfully saved to Supabase.")
+        
+        # Fallback automated cleanup for chat logs (3 months TTL)
+        try:
+            cutoff = (datetime.utcnow() - timedelta(days=90)).isoformat()
+            supabase_client.table("chat_logs").delete().lt("created_at", cutoff).execute()
+        except Exception as cleanup_err:
+            logger.error(f"Fallback chat cleanup failed: {cleanup_err}")
+            
+    except Exception as e:
+        logger.error(f"Failed to save chat log to Supabase: {e}")
+
 # Pydantic Request Models
 class ChatMessage(BaseModel):
     role: str # 'user' or 'model'
@@ -263,8 +330,9 @@ async def upload_jd_file(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=f"Failed to process file: {str(e)}")
 
 @app.post("/api/chat")
-async def chat_twin(payload: ChatRequest):
+async def chat_twin(payload: ChatRequest, request: Request):
     logger.info(f"Chat request received. Query: '{payload.message}' | History size: {len(payload.history)}")
+    await log_visit(request, "/api/chat")
     if not supabase_client:
         logger.error("Supabase database is not configured. Aborting chat request.")
         async def error_generator():
@@ -329,7 +397,9 @@ Rules of conversation:
                     async for chunk in stream_from_grok(system_instruction, history, query, grok_api_key):
                         accumulated_text.append(chunk)
                         yield chunk
-                    logger.info(f"Raw Grok Response: {''.join(accumulated_text)}")
+                    raw_resp = "".join(accumulated_text)
+                    logger.info(f"Raw Grok Response: {raw_resp}")
+                    await log_chat(query, raw_resp, request)
                 except Exception as ge:
                     logger.error(f"Grok streaming failed: {ge}")
                     yield f"\n[Grok Error: {str(ge)}]"
@@ -351,7 +421,9 @@ Rules of conversation:
                 if chunk.text:
                     accumulated_text.append(chunk.text)
                     yield chunk.text
-            logger.info(f"Raw Gemini Response: {''.join(accumulated_text)}")
+            raw_resp = "".join(accumulated_text)
+            logger.info(f"Raw Gemini Response: {raw_resp}")
+            await log_chat(query, raw_resp, request)
         except Exception as e:
             logger.error(f"Gemini stream generation failed: {e}")
             # Fallback to Grok if Gemini fails mid-run
@@ -362,7 +434,9 @@ Rules of conversation:
                     async for chunk in stream_from_grok(system_instruction, history, query, grok_api_key):
                         accumulated_text.append(chunk)
                         yield chunk
-                    logger.info(f"Raw Grok Fallback Response: {''.join(accumulated_text)}")
+                    raw_resp = "".join(accumulated_text)
+                    logger.info(f"Raw Grok Fallback Response: {raw_resp}")
+                    await log_chat(query, raw_resp, request)
                 except Exception as ge:
                     logger.error(f"Grok fallback stream execution failed: {ge}")
                     yield f"\n[Grok Fallback Error: {str(ge)}]"
@@ -372,8 +446,9 @@ Rules of conversation:
     return StreamingResponse(response_streamer(), media_type="text/plain")
 
 @app.post("/api/recruiter")
-async def match_job(payload: JobMatchRequest):
+async def match_job(payload: JobMatchRequest, request: Request):
     logger.info(f"Job Match analysis requested. JD input length: {len(payload.job_description)} characters.")
+    await log_visit(request, "/api/recruiter")
     if not supabase_client:
         logger.error("Supabase database not configured for Job Match.")
         raise HTTPException(status_code=500, detail="Database not configured.")
@@ -429,8 +504,9 @@ You must return a structured JSON response containing:
         raise HTTPException(status_code=500, detail=f"Grok Job Analysis failed: {str(e)}")
 
 @app.post("/api/interview")
-async def interview_me(payload: InterviewRequest):
+async def interview_me(payload: InterviewRequest, request: Request):
     logger.info(f"Mock interview question asked: '{payload.question}'")
+    await log_visit(request, "/api/interview")
     if not supabase_client:
         logger.error("Supabase database not configured for interview.")
         raise HTTPException(status_code=500, detail="Database not configured.")
@@ -470,8 +546,9 @@ Keep the answer under 150 words, structured like a spoken response.
         raise HTTPException(status_code=500, detail=f"Interview response failed: {str(e)}")
 
 @app.get("/api/story")
-async def get_career_story():
+async def get_career_story(request: Request):
     logger.info("Career story generation requested.")
+    await log_visit(request, "/api/story")
     # Read raw JSON files from data directory
     data_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
     try:
@@ -543,6 +620,18 @@ def send_contact_email(payload: ContactRequest):
         print(f"SMTP credentials not set or are placeholders. Simulated contact form submission. To: {to_email}")
         return {"status": "simulated", "message": "Email transmission simulated successfully."}
 
+    # Save to database if client exists
+    if supabase_client:
+        try:
+            supabase_client.table("contact_messages").insert({
+                "name": name,
+                "email": email,
+                "message": message
+            }).execute()
+            logger.info("Contact message successfully saved to Supabase.")
+        except Exception as e:
+            logger.error(f"Failed to save contact message to Supabase: {e}")
+
     try:
         # Construct MIME Message
         msg = MIMEMultipart()
@@ -567,3 +656,69 @@ def send_contact_email(payload: ContactRequest):
         return {"status": "sent", "message": f"Email successfully sent to {to_email}."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"SMTP transmission failed: {str(e)}")
+
+# Admin Dashboard Endpoints
+ADMIN_PASSCODE = os.environ.get("ADMIN_PASSCODE", "sujithadmin")
+
+@app.get("/api/admin/visits")
+async def get_visits(request: Request, x_admin_passcode: Optional[str] = Header(None)):
+    if x_admin_passcode != ADMIN_PASSCODE:
+        raise HTTPException(status_code=401, detail="Unauthorized: Invalid passcode.")
+    if not supabase_client:
+        raise HTTPException(status_code=500, detail="Database not configured.")
+    try:
+        res = supabase_client.table("visits").select("*").order("created_at", desc=True).limit(1000).execute()
+        return res.data
+    except Exception as e:
+        logger.error(f"Error fetching visits: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/admin/chats")
+async def get_chats(request: Request, x_admin_passcode: Optional[str] = Header(None)):
+    if x_admin_passcode != ADMIN_PASSCODE:
+        raise HTTPException(status_code=401, detail="Unauthorized: Invalid passcode.")
+    if not supabase_client:
+        raise HTTPException(status_code=500, detail="Database not configured.")
+    try:
+        res = supabase_client.table("chat_logs").select("*").order("created_at", desc=True).limit(1000).execute()
+        return res.data
+    except Exception as e:
+        logger.error(f"Error fetching chats: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/admin/messages")
+async def get_messages(request: Request, x_admin_passcode: Optional[str] = Header(None)):
+    if x_admin_passcode != ADMIN_PASSCODE:
+        raise HTTPException(status_code=401, detail="Unauthorized: Invalid passcode.")
+    if not supabase_client:
+        raise HTTPException(status_code=500, detail="Database not configured.")
+    try:
+        res = supabase_client.table("contact_messages").select("*").order("created_at", desc=True).limit(1000).execute()
+        return res.data
+    except Exception as e:
+        logger.error(f"Error fetching messages: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/admin/cleanup")
+async def run_cleanup(request: Request, x_admin_passcode: Optional[str] = Header(None)):
+    if x_admin_passcode != ADMIN_PASSCODE:
+        raise HTTPException(status_code=401, detail="Unauthorized: Invalid passcode.")
+    if not supabase_client:
+        raise HTTPException(status_code=500, detail="Database not configured.")
+    try:
+        cutoff_visits = (datetime.utcnow() - timedelta(days=365)).isoformat()
+        cutoff_chats = (datetime.utcnow() - timedelta(days=90)).isoformat()
+        
+        # Trigger deletions
+        supabase_client.table("visits").delete().lt("created_at", cutoff_visits).execute()
+        supabase_client.table("chat_logs").delete().lt("created_at", cutoff_chats).execute()
+        
+        return {
+            "status": "success",
+            "message": "Manual cleanup completed successfully.",
+            "visits_cutoff": cutoff_visits,
+            "chats_cutoff": cutoff_chats
+        }
+    except Exception as e:
+        logger.error(f"Error running manual cleanup: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
