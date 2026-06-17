@@ -58,6 +58,7 @@ export default function RecruiterConsole() {
 
     setIsFileUploading(true);
     setError("");
+    setResult(null);
 
     const formData = new FormData();
     formData.append("file", file);
@@ -76,6 +77,32 @@ export default function RecruiterConsole() {
       const data = await response.json();
       if (data.text) {
         setJd(data.text);
+        
+        // Immediately run match analysis
+        setIsLoading(true);
+        try {
+          const matchResponse = await fetch("/api/recruiter", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ job_description: data.text }),
+          });
+
+          if (!matchResponse.ok) {
+            throw new Error("Match calculation failed");
+          }
+
+          const matchData = await matchResponse.json();
+          if (matchData.error) {
+            throw new Error(matchData.error);
+          }
+          setResult(matchData);
+        } catch (err: any) {
+          setError(
+            err.message || "Failed to analyze the Job Description. Please try again shortly."
+          );
+        } finally {
+          setIsLoading(false);
+        }
       } else {
         throw new Error("No readable text found in document.");
       }
@@ -100,68 +127,52 @@ export default function RecruiterConsole() {
         <h3 className="text-sm font-bold text-white uppercase tracking-wider">Does Sujith fit for your role?</h3>
       </div>
 
-      <div className="flex-1 flex flex-col justify-between min-h-0">
-        <div className="space-y-3 overflow-y-auto pr-1 scrollbar-thin">
-          <p className="text-white/50 leading-relaxed text-[11px]">
-            Evaluate Sujith for your role. Upload a Job Description or paste the requirements to receive an JithX-powered compatibility analysis, including match score, relevant experience, strengths, gaps, and recommendations.
+      <div className="flex-1 flex flex-col justify-center min-h-0">
+        <div className="space-y-4 overflow-y-auto pr-1 scrollbar-thin">
+          <p className="text-white/50 leading-relaxed text-[11px] text-center">
+            Upload your Job Description (PDF or DOCX) to receive an JithX-powered compatibility analysis, including fit score, strengths, and hire recommendations.
           </p>
           <div className="space-y-3">
-            <textarea
-              value={jd}
-              onChange={(e) => setJd(e.target.value)}
-              placeholder="Paste Job Description here... (e.g. Seeking a Junior AI Engineer with FastAPI, LLM pipelines, and Neo4j experience...)"
-              rows={4}
-              className="w-full bg-black/60 border border-white/10 rounded-lg p-3 text-white placeholder-white/20 focus:outline-none focus:border-cyan-400/50 text-[11px] leading-relaxed resize-none font-mono"
-            />
-
-            <div className="flex items-center justify-between gap-4 py-1.5 border-t border-b border-white/5">
-              <span className="text-[10px] text-white/30 font-mono">OR</span>
+            <label className={`group flex flex-col items-center justify-center border border-dashed rounded-xl p-6 text-center transition-all min-h-[140px] relative overflow-hidden ${
+              isFileUploading || isLoading 
+                ? "border-cyan-500/30 bg-cyan-950/5 cursor-not-allowed" 
+                : "border-cyan-500/25 hover:border-cyan-500/50 bg-cyan-950/5 hover:bg-cyan-950/10 cursor-pointer"
+            }`}>
+              <input
+                type="file"
+                accept=".pdf,.docx,.doc"
+                onChange={handleFileUpload}
+                className="hidden"
+                disabled={isFileUploading || isLoading}
+              />
               
-              <div className="flex-1 flex justify-end">
-                <label className="flex items-center gap-2 px-3 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 hover:border-cyan-500/40 rounded-lg text-cyan-300 text-[10px] font-bold font-mono cursor-pointer transition-all">
-                  <FileText className="w-3.5 h-3.5" />
-                  <span>Upload JD File (PDF, DOCX)</span>
-                  <input
-                    type="file"
-                    accept=".pdf,.docx,.doc"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                    disabled={isFileUploading}
-                  />
-                </label>
-              </div>
-            </div>
-
-            {isFileUploading && (
-              <div className="flex items-center gap-2 text-cyan-400 text-[10px] font-mono animate-pulse bg-cyan-500/5 border border-cyan-500/10 p-2.5 rounded-lg">
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                <span>Extracting document text...</span>
-              </div>
-            )}
+              {isFileUploading || isLoading ? (
+                <div className="flex flex-col items-center space-y-2">
+                  <Loader2 className="w-6 h-6 text-cyan-400 animate-spin" />
+                  <span className="text-[10px] text-cyan-300 font-mono tracking-widest uppercase animate-pulse">
+                    {isFileUploading ? "Extracting JD text..." : "Calculating match fit..."}
+                  </span>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center space-y-2">
+                  <FileText className="w-7 h-7 text-cyan-400/50 group-hover:text-cyan-400 transition-colors" />
+                  <span className="text-[11px] text-white/80 font-bold uppercase tracking-wider">
+                    Upload Job Description
+                  </span>
+                  <span className="text-[9px] text-white/30 tracking-normal font-normal">
+                    Supports PDF, DOCX, or DOC formats
+                  </span>
+                </div>
+              )}
+            </label>
           </div>
           {error && (
-            <div className="flex items-center space-x-2 text-red-400 border border-red-500/20 bg-red-500/5 p-3 rounded-lg text-[10px]">
+            <div className="flex items-center space-x-2 text-red-400 border border-red-500/20 bg-red-500/5 p-3 rounded-lg text-[10px] font-mono">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{error}</span>
             </div>
           )}
         </div>
-        
-        <button
-          onClick={handleMatch}
-          disabled={isLoading || isFileUploading || !jd.trim()}
-          className="w-full bg-cyan-500 hover:bg-cyan-400 text-black py-2.5 rounded-lg flex items-center justify-center gap-2 font-bold cursor-pointer disabled:opacity-50 transition-all shadow-[0_0_15px_rgba(0,240,255,0.15)] mt-3 shrink-0"
-        >
-          {isLoading ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" /> Analyzing requirements...
-            </>
-          ) : (
-            <>
-              <Send className="w-4 h-4" /> Calculate Fit Score
-            </>
-          )}
-        </button>
       </div>
 
       {/* POPUP MODAL FOR ANALYSIS RESULTS */}
