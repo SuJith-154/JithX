@@ -20,6 +20,7 @@ export default function ChatTerminal({ isPage = false }: { isPage?: boolean }) {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const quickPrompts = [
     "Who is Sujith?",
@@ -28,9 +29,26 @@ export default function ChatTerminal({ isPage = false }: { isPage?: boolean }) {
     "Why is he unique as an AI Engineer?"
   ];
 
-  // Auto scroll to bottom
+  // Auto scroll to bottom with stability during streaming
   useEffect(() => {
-    scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+    const container = containerRef.current;
+    if (!container) return;
+
+    // Scroll to bottom smoothly when a user message is added
+    const lastMessage = messages[messages.length - 1];
+    if (lastMessage && lastMessage.role === "user") {
+      scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+      return;
+    }
+
+    // Scroll automatically but stably when streaming the response
+    const threshold = 150; // px
+    const isNearBottom = 
+      container.scrollHeight - container.scrollTop - container.clientHeight <= threshold;
+
+    if (isNearBottom) {
+      container.scrollTop = container.scrollHeight;
+    }
   }, [messages, isLoading]);
 
   const handleSend = async (text: string) => {
@@ -55,7 +73,7 @@ export default function ChatTerminal({ isPage = false }: { isPage?: boolean }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: text,
-          history: [...historyPayload, { role: "user", parts: text }],
+          history: historyPayload,
         }),
       });
 
@@ -162,7 +180,10 @@ export default function ChatTerminal({ isPage = false }: { isPage?: boolean }) {
       </div>
 
       {/* Messages viewport */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 font-mono text-sm">
+      <div 
+        ref={containerRef}
+        className="flex-1 overflow-y-auto p-4 space-y-4 font-mono text-sm"
+      >
         <AnimatePresence initial={false}>
           {messages.map((msg, index) => (
             <motion.div
@@ -188,6 +209,11 @@ export default function ChatTerminal({ isPage = false }: { isPage?: boolean }) {
               >
                 {msg.role === "user" ? (
                   msg.parts
+                ) : msg.parts === "" ? (
+                  <div className="flex items-center space-x-2 text-white/50 italic animate-pulse">
+                    <Cpu className="w-3.5 h-3.5 animate-spin text-purple-400" />
+                    <span>Querying database vectors...</span>
+                  </div>
                 ) : (
                   <MarkdownFormatter text={msg.parts} />
                 )}
@@ -199,20 +225,6 @@ export default function ChatTerminal({ isPage = false }: { isPage?: boolean }) {
               )}
             </motion.div>
           ))}
-          {isLoading && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="flex items-center space-x-3"
-            >
-              <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 shrink-0">
-                <Cpu className="w-4 h-4 animate-spin" />
-              </div>
-              <div className="bg-black/40 border border-white/5 rounded-lg px-3 py-2 text-xs text-white/50 italic animate-pulse">
-                Querying database vectors...
-              </div>
-            </motion.div>
-          )}
         </AnimatePresence>
         <div ref={scrollRef} />
       </div>

@@ -358,7 +358,7 @@ async def chat_twin(payload: ChatRequest, request: Request):
     # 1. Embed query
     query_emb = embed_text(query)
     
-    # 2. Retrieve matched resume chunks
+    # 2. Retrieve matched resume chunks (Pure RAG - load all vector matches)
     matched_docs = query_supabase_vectors(query_emb, n_results=6)
     context_text = "\n\n".join(matched_docs)
     
@@ -367,18 +367,19 @@ async def chat_twin(payload: ChatRequest, request: Request):
 You are the AI Digital Twin of Sujith Senthilraj (Sujith S), a highly skilled Junior AI Engineer.
 Your goal is to represent Sujith to recruiters, developers, and visitors in an intelligent, friendly, professional, and confident manner.
 
-Here is the source-of-truth information about Sujith extracted directly from his resume and portfolio documents (including published research papers):
+Here is the source-of-truth information about Sujith extracted directly from his resume, portfolio documents, and published research papers:
 ---
 {context_text}
 ---
 
 Rules of conversation:
 1. Answer the user's questions based ONLY on the provided source-of-truth context.
-2. If the user asks something that is NOT related to Sujith or is not covered in the context, reply with:
+2. IMPORTANT context restriction: Discuss or mention details about his research paper, R&D, publishing, or the "Edge-AI Smart Stick" project ONLY if the user explicitly asks about his research, publishing, R&D, or the smart stick. For all other general questions (e.g. about his experience, projects, skills, education), rely strictly on his professional resume, projects, and internship experience (such as at Prayag.ai).
+3. If the user asks something that is NOT related to Sujith or is not covered in the context, reply with:
    "I don't have enough information about that yet."
-3. Do not make up or hallucinate any projects, numbers, jobs, skills, or experiences that are not in the context.
-4. Keep answers relatively concise, professional, and clear. Use formatted bullet points or short paragraphs for readability.
-5. Talk in first person ("I", "my") as Sujith's AI Digital Twin, or third person ("Sujith is...") depending on how you are addressed, but write in a personal, developer-focused voice.
+4. Do not make up or hallucinate any projects, numbers, jobs, skills, or experiences that are not in the context.
+5. Keep answers relatively concise, professional, and clear. Use formatted bullet points or short paragraphs for readability.
+6. Talk in first person ("I", "my") as Sujith's AI Digital Twin, or third person ("Sujith is...") depending on how you are addressed, but write in a personal, developer-focused voice.
 """
 
     # 4. Convert history to google-genai format
@@ -421,16 +422,16 @@ Rules of conversation:
                 yield "System configuration error: Neither Gemini nor Grok API Key is configured."
             return
 
-        logger.info("Requesting Gemini-2.5-flash content stream...")
+        logger.info("Requesting Gemini-2.5-flash content stream asynchronously...")
         try:
-            response_stream = client.models.generate_content_stream(
+            response_stream = await client.aio.models.generate_content_stream(
                 model="gemini-2.5-flash",
                 contents=contents,
                 config=types.GenerateContentConfig(
                     system_instruction=system_instruction
                 )
             )
-            for chunk in response_stream:
+            async for chunk in response_stream:
                 if chunk.text:
                     accumulated_text.append(chunk.text)
                     yield chunk.text
@@ -456,7 +457,15 @@ Rules of conversation:
             else:
                 yield f"\n[Stream Error: {str(e)}]"
 
-    return StreamingResponse(response_streamer(), media_type="text/plain")
+    return StreamingResponse(
+        response_streamer(),
+        media_type="text/plain",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no"
+        }
+    )
 
 @app.post("/api/recruiter")
 async def match_job(payload: JobMatchRequest, request: Request):
@@ -526,7 +535,7 @@ async def interview_me(payload: InterviewRequest, request: Request):
         
     question = payload.question
     
-    # 1. Retrieve chunks
+    # 1. Retrieve chunks (Pure RAG - load all vector matches)
     q_emb = embed_text(question)
     matched_docs = query_supabase_vectors(q_emb, n_results=5)
     context_text = "\n\n".join(matched_docs)
@@ -534,13 +543,17 @@ async def interview_me(payload: InterviewRequest, request: Request):
     # 2. Call Gemini
     prompt = f"""
 You are Sujith Senthilraj, answering a recruiter during an interview. 
-Answer the following interview question directly, authentically, and confidently based on the resume details.
+Answer the following interview question directly, authentically, and confidently based on the context.
 
 QUESTION:
 {question}
 
-RESUME DETAILS FOR CONTEXT:
+CONTEXT:
 {context_text}
+
+Rules for context use:
+1. Mention details about your research paper, publishing, R&D, or the "Edge-AI Smart Stick" project ONLY if the question explicitly asks about your research, publishing, R&D, or the smart stick. 
+2. For all other general questions, rely strictly on your professional resume, experience, skills, and work projects (such as at Prayag.ai).
 
 Provide an answer in Sujith's first-person voice. Focus on technical strengths, concrete achievements (like the FastMCP server or Neo4j implementation), and project examples.
 Keep the answer under 150 words, structured like a spoken response.

@@ -1,5 +1,6 @@
 import os
 import re
+import time
 from pypdf import PdfReader
 from supabase import create_client
 from google import genai
@@ -155,7 +156,15 @@ def main():
     all_chunks = []
     
     if os.path.exists(documents_dir):
+        # Identify PDF files
         pdf_files = [f for f in os.listdir(documents_dir) if f.endswith(".pdf")]
+        # Identify all TXT files
+        txt_files = [f for f in os.listdir(documents_dir) if f.endswith(".txt")]
+        
+        # Build set of text files that correspond to PDFs to skip them
+        pdf_bases = {os.path.splitext(f)[0] for f in pdf_files}
+        pdf_text_names = {f"{base}_text.txt" for base in pdf_bases}
+        
         for file in pdf_files:
             path = os.path.join(documents_dir, file)
             # Extract text
@@ -172,6 +181,23 @@ def main():
             chunks = chunk_resume_text(text, file)
             all_chunks.extend(chunks)
             print(f"Extracted {len(chunks)} chunks from {file}")
+            
+        for file in txt_files:
+            # Skip if it has a corresponding PDF or was generated as _text.txt for a PDF
+            base = os.path.splitext(file)[0]
+            if base in pdf_bases or file in pdf_text_names:
+                print(f"Skipping generated/redundant text file: {file}")
+                continue
+                
+            path = os.path.join(documents_dir, file)
+            print(f"Reading standalone text file: {path}")
+            with open(path, "r", encoding="utf-8") as f:
+                text = f.read()
+                
+            # Chunk the text
+            chunks = chunk_resume_text(text, file)
+            all_chunks.extend(chunks)
+            print(f"Extracted {len(chunks)} chunks from standalone text file {file}")
     else:
         print(f"ERROR: Documents folder not found at {documents_dir}")
         return
@@ -200,26 +226,41 @@ def main():
         text_content = chunk["text"]
         metadata = chunk["metadata"]
         
-        try:
-            # Generate embedding using the new GenAI Client
-            response = client.models.embed_content(
-                model="gemini-embedding-2",
-                contents=text_content,
-                config=types.EmbedContentConfig(
-                    output_dimensionality=3072
+        embedding = None
+        retries = 5
+        base_delay = 5  # Start with 5 second delay if rate limited
+        
+        for attempt in range(retries):
+            try:
+                # Generate embedding using the new GenAI Client
+                response = client.models.embed_content(
+                    model="gemini-embedding-2",
+                    contents=text_content,
+                    config=types.EmbedContentConfig(
+                        output_dimensionality=3072
+                    )
                 )
-            )
-            embedding = response.embeddings[0].values
-            
+                embedding = response.embeddings[0].values
+                break  # Success
+            except Exception as e:
+                err_str = str(e).lower()
+                if "quota" in err_str or "rate" in err_str or "exhausted" in err_str or "429" in err_str:
+                    delay = base_delay * (2 ** attempt)
+                    print(f"Rate limited on chunk {i+1}. Retrying in {delay}s... (Attempt {attempt+1}/{retries}). Error: {e}")
+                    time.sleep(delay)
+                else:
+                    print(f"Error embedding chunk {i+1} on attempt {attempt+1}: {e}")
+                    time.sleep(1)
+        
+        if embedding is not None:
             rows.append({
                 "content": text_content,
                 "metadata": metadata,
                 "embedding": embedding
             })
-            
             print(f"Embedded chunk {i+1}/{len(all_chunks)}")
-        except Exception as e:
-            print(f"Error embedding chunk {i}: {e}")
+        else:
+            print(f"Failed to embed chunk {i+1} after all attempts.")
             
     if rows:
         print(f"Saving {len(rows)} vectors to Supabase...")
